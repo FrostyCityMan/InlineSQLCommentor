@@ -2,6 +2,7 @@ import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
+
 plugins {
     id("java") // Java support
     alias(libs.plugins.kotlin) // Kotlin support

@@ -1,15 +1,35 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
-    <id>com.github.frostycityman.inlinesqlcommentor</id>
-    <name>InlineSQLCommentor</name>
-    <vendor>frostycityman</vendor>
-
-    <depends>com.intellij.modules.platform</depends>
-
-    <resource-bundle>messages.MyBundle</resource-bundle>
-
-    <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.frostycityman.inlinesqlcommentor.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
-        <postStartupActivity implementation="com.github.frostycityman.inlinesqlcommentor.startup.MyProjectActivity" />
-    </extensions>
+	<id>com.frostycityman.inlineSQLCommentor</id>
+	<name>inlineSQLCommentor</name>
+	<version>1.0.0</version>
+	<vendor email="your@email.com" url="https://github.com/frostycityman">frostycityman</vendor>
+	
+	<description>
+		SQL 쿼리문 내 컬럼 주석을 인라인으로 자동 삽입해주는 IntelliJ 플러그인입니다.
+	</description>
+	
+	<depends>com.intellij.modules.platform</depends>
+	
+	<resource-bundle>messages.MyBundle</resource-bundle>
+	
+	<extensions defaultExtensionNs="com.intellij">
+		<toolWindow
+				id="InlineSQLCommentorWindow"
+				factoryClass="com.frostycityman.inlineSQLCommentor.toolWindow.MyToolWindowFactory"/>
+		<postStartupActivity
+				implementation="com.frostycityman.inlineSQLCommentor.startup.MyProjectActivity"/>
+		<annotator
+				language="SQL"
+				implementationClass="com.frostycityman.inlineSQLCommentor.annotator.SqlInlineCommentAnnotator"/>
+	</extensions>
+	
+	<actions>
+		<action id="InlineSQLCommentorAction"
+				class="com.frostycityman.inlineSQLCommentor.actions.MyPluginAction"
+				text="Inline SQL Comment 삽입"
+				description="SQL 문장에서 컬럼 주석을 자동 삽입합니다.">
+			<add-to-group group-id="EditorPopupMenu" anchor="last"/>
+		</action>
+	</actions>
 </idea-plugin>
