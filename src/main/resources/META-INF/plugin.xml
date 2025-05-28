@@ -9,14 +9,14 @@
 	<resource-bundle>messages.MyBundle</resource-bundle>
 	
 	<extensions defaultExtensionNs="com.intellij">
-		<toolWindow factoryClass="com.github.frostycityman.inlinesqlcommentor.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
+<!--		<toolWindow factoryClass="com.github.frostycityman.inlinesqlcommentor.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>-->
 		<postStartupActivity implementation="com.github.frostycityman.inlinesqlcommentor.startup.MyProjectActivity"/>
 	</extensions>
 	<depends>com.intellij.database</depends>
 	
 	<actions>
 		<action id="InlineSQLCommentorAction"
-				class="com.github.frostycityman.inlinesqlcommentor.MyPluginAction"
+				class="com.github.frostycityman.inlinesqlcommentor.action.MyPluginAction"
 				text="Inline SQL Comment 삽입"
 				description="SQL 컬럼 옆에 주석을 삽입합니다.">
 			<add-to-group group-id="EditorPopupMenu" anchor="last"/>
