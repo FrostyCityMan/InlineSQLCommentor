@@ -31,7 +31,7 @@ repositories {
     }
 }
 
-// Dependencies are managed with Gradle version catalog - read more: https://docs.gradle.org/current/userguide/platforms.html#sub:version-catalog
+// 종속성은 Gradle 버전 카탈로그로 관리됩니다- read more: https://docs.gradle.org/current/userguide/platforms.html#sub:version-catalog
 dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.opentest4j)
