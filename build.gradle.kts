@@ -34,7 +34,7 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.opentest4j)
 
-    antlr("org.antlr:antlr4:4.5") // use ANTLR version 4
+    antlr("org.antlr:antlr4:4.13.2") // use ANTLR version 4
     intellijPlatform {
         create(providers.gradleProperty("platformType"), providers.gradleProperty("platformVersion"))
         bundledPlugins(providers.gradleProperty("platformBundledPlugins").map { it.split(',') })
