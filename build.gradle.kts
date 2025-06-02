@@ -1,8 +1,7 @@
+
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
-
-// import antlr
 
 plugins {
     id("java")
@@ -12,8 +11,8 @@ plugins {
     alias(libs.plugins.qodana)
     alias(libs.plugins.kover)
 
-    // ▶ 외부 ANTLR 4 Gradle 플러그인
-    antlr
+    // Gradle 내장 ANTLR 플러그인
+    id("antlr")
 }
 
 group = providers.gradleProperty("pluginGroup").get()
@@ -25,24 +24,38 @@ kotlin {
 
 repositories {
     mavenCentral()
+    maven { url = uri("https://jitpack.io") } // JitPack 저장소 추가
     intellijPlatform {
         defaultRepositories()
     }
 }
 
 dependencies {
+    // ANTLR 4 런타임/컴파일러
+    antlr("org.antlr:antlr4:4.13.0")
+
+    // antlr4-intellij-adaptor (JitPack)
+    implementation("com.github.antlr:antlr4-intellij-adaptor:1.3.0")
+
+    // 테스트용
     testImplementation(libs.junit)
     testImplementation(libs.opentest4j)
 
-    antlr("org.antlr:antlr4:4.13.2") // use ANTLR version 4
+    // IntelliJ Platform Plugin
     intellijPlatform {
-        create(providers.gradleProperty("platformType"), providers.gradleProperty("platformVersion"))
-        bundledPlugins(providers.gradleProperty("platformBundledPlugins").map { it.split(',') })
+        create(
+            providers.gradleProperty("platformType"),
+            providers.gradleProperty("platformVersion")
+        )
+        bundledPlugins(
+            providers.gradleProperty("platformBundledPlugins")
+                .map { it.split(',') }
+        )
         testFramework(TestFrameworkType.Platform)
     }
 }
 
-// ANTLR이 생성한 Java 코드를 Kotlin/Java 컴파일러가 인식하게 src/main/gen을 소스 루트로 지정
+// ANTLR이 생성한 Java 코드를 컴파일러가 인식하도록 src/main/gen을 소스 루트로 지정
 sourceSets {
     main {
         java {
@@ -51,29 +64,37 @@ sourceSets {
     }
 }
 
-
 tasks {
-    // Gradle 내장된 generateGrammarSource 태스크를 설정
+    // 내장 ANTLR 플러그인의 generateGrammarSource 설정
     named<AntlrTask>("generateGrammarSource") {
-        // 기본적으로 src/main/antlr 하위 모든 .g4 파일을 인식하게 되므로,
-        // source를 별도로 지정하지 않아도 됩니다.
-        // 다만 “특정 하위 디렉터리만 사용”하고 싶다면, 아래처럼 fileTree를 지정할 수 있습니다.
+        // src/main/antlr/**/*.g4 파일을 모두 인식 (별도 지정 불필요)
+        // 필요할 경우, 특정 폴더만 포함하도록 아래처럼 설정 가능:
         //
         // source = fileTree("src/main/antlr") {
-        //     include("mysql/*.g4", "postgresql/*.g4", "oracle/*.g4")
+        //     include("mysql/*.g4", "postgresql/*.g4", "oracle/PlSql.g4")
         // }
 
-        // ▶ ANTLR 옵션: Visitor 생성하며, 패키지 경로 지정
+        // ANTLR 옵션: Visitor 자동 생성 & 패키지 경로 지정
         arguments = listOf(
             "-visitor",
-            "-package", "com.github.frostycityman.inlinesqlcommentor"
+            "-package", "com.github.frostycityman.inlinesqlcommentor.sql.parser.generated"
         )
 
-        // ▶ 생성된 Java 소스가 저장되는 위치
+        // 생성된 Java 코드를 저장할 위치
         outputDirectory = file("src/main/gen")
+
+        // Combined Grammar 한 파일(예: PlSql.g4) 방식이면 libraries 불필요
+        // 별도 Lexer/Parser 쌍을 사용할 때만 libraries 지정:
+        // libraries = listOf(
+        //     file("src/main/antlr/mysql"),
+        //     file("src/main/antlr/postgresql"),
+        //     file("src/main/antlr/oracle")
+        // )
     }
+
     wrapper {
-        gradleVersion = providers.gradleProperty("gradleVersion").get()
+        gradleVersion    = providers.gradleProperty("gradleVersion").get()
+        distributionType = Wrapper.DistributionType.ALL
     }
 
     publishPlugin {
@@ -83,31 +104,31 @@ tasks {
 
 intellijPlatform {
     pluginConfiguration {
-        name = providers.gradleProperty("pluginName")
+        name    = providers.gradleProperty("pluginName")
         version = providers.gradleProperty("pluginVersion")
 
+        // README.md 에서 Plugin description 추출
         description = providers.fileContents(layout.projectDirectory.file("README.md")).asText.map {
             val start = "<!-- Plugin description -->"
-            val end = "<!-- Plugin description end -->"
-
-            with(it.lines()) {
-                if (!containsAll(listOf(start, end))) {
-                    throw GradleException("Plugin description section not found in README.md:\n$start ... $end")
-                }
-                subList(indexOf(start) + 1, indexOf(end)).joinToString("\n").let(::markdownToHTML)
+            val end   = "<!-- Plugin description end -->"
+            val lines = it.lines()
+            if (!lines.containsAll(listOf(start, end))) {
+                throw GradleException("Plugin description section not found in README.md:\n$start ... $end")
             }
+            lines.subList(lines.indexOf(start) + 1, lines.indexOf(end))
+                .joinToString("\n")
+                .let(::markdownToHTML)
         }
 
+        // Changelog 설정
         val changelog = project.changelog
         changeNotes = providers.gradleProperty("pluginVersion").map { pluginVersion ->
-            with(changelog) {
-                renderItem(
-                    (getOrNull(pluginVersion) ?: getUnreleased())
-                        .withHeader(false)
-                        .withEmptySections(false),
-                    Changelog.OutputType.HTML,
-                )
-            }
+            changelog.renderItem(
+                (changelog.getOrNull(pluginVersion) ?: changelog.getUnreleased())
+                    .withHeader(false)
+                    .withEmptySections(false),
+                Changelog.OutputType.HTML
+            )
         }
 
         ideaVersion {
@@ -118,14 +139,14 @@ intellijPlatform {
 
     signing {
         certificateChain = providers.environmentVariable("CERTIFICATE_CHAIN")
-        privateKey = providers.environmentVariable("PRIVATE_KEY")
-        password = providers.environmentVariable("PRIVATE_KEY_PASSWORD")
+        privateKey       = providers.environmentVariable("PRIVATE_KEY")
+        password         = providers.environmentVariable("PRIVATE_KEY_PASSWORD")
     }
 
     publishing {
-        token = providers.environmentVariable("PUBLISH_TOKEN")
-        channels = providers.gradleProperty("pluginVersion").map {
-            listOf(it.substringAfter('-', "").substringBefore('.').ifEmpty { "default" })
+        token    = providers.environmentVariable("PUBLISH_TOKEN")
+        channels = providers.gradleProperty("pluginVersion").map { ver ->
+            listOf(ver.substringAfter('-').substringBefore('.').ifEmpty { "default" })
         }
     }
 
@@ -160,11 +181,10 @@ intellijPlatformTesting {
                         "-Drobot-server.port=8082",
                         "-Dide.mac.message.dialogs.as.sheets=false",
                         "-Djb.privacy.policy.text=<!--999.999-->",
-                        "-Djb.consents.confirmation.enabled=false",
+                        "-Djb.consents.confirmation.enabled=false"
                     )
                 }
             }
-
             plugins {
                 robotServerPlugin()
             }
