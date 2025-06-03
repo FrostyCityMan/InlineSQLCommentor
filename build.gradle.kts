@@ -32,7 +32,7 @@ repositories {
 
 dependencies {
     // ANTLR 4 런타임/컴파일러
-    antlr("org.antlr:antlr4:4.13.0")
+    antlr("org.antlr:antlr4:4.13.2")
 
     // antlr4-intellij-adaptor (JitPack)
     implementation("com.github.antlr:antlr4-intellij-adaptor:1.3.0")
