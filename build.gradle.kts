@@ -1,8 +1,7 @@
+import org.gradle.api.plugins.antlr.AntlrTask
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
-
-// import antlr
 
 plugins {
     id("java")
@@ -12,8 +11,8 @@ plugins {
     alias(libs.plugins.qodana)
     alias(libs.plugins.kover)
 
-    // ▶ 외부 ANTLR 4 Gradle 플러그인
-    antlr
+    // ▶ Gradle 내장 ANTLR 플러그인 활성화
+    id("antlr")
 }
 
 group = providers.gradleProperty("pluginGroup").get()
@@ -31,13 +30,23 @@ repositories {
 }
 
 dependencies {
+    // ▶ ANTLR 4.13.2 컴파일러/런타임 의존성
+    antlr("org.antlr:antlr4:4.13.2")
+
+    // ▶ 테스트 의존성
     testImplementation(libs.junit)
     testImplementation(libs.opentest4j)
 
-    antlr("org.antlr:antlr4:4.13.2") // use ANTLR version 4
+    // ▶ IntelliJ Platform Plugin 의존성
     intellijPlatform {
-        create(providers.gradleProperty("platformType"), providers.gradleProperty("platformVersion"))
-        bundledPlugins(providers.gradleProperty("platformBundledPlugins").map { it.split(',') })
+        create(
+            providers.gradleProperty("platformType"),
+            providers.gradleProperty("platformVersion")
+        )
+        bundledPlugins(
+            providers.gradleProperty("platformBundledPlugins")
+                .map { it.split(',') }
+        )
         testFramework(TestFrameworkType.Platform)
     }
 }
@@ -51,29 +60,33 @@ sourceSets {
     }
 }
 
-
 tasks {
-    // Gradle 내장된 generateGrammarSource 태스크를 설정
+    // ── ANTLR generateGrammarSource 태스크 설정 ──
     named<AntlrTask>("generateGrammarSource") {
-        // 기본적으로 src/main/antlr 하위 모든 .g4 파일을 인식하게 되므로,
-        // source를 별도로 지정하지 않아도 됩니다.
-        // 다만 “특정 하위 디렉터리만 사용”하고 싶다면, 아래처럼 fileTree를 지정할 수 있습니다.
-        //
-        // source = fileTree("src/main/antlr") {
-        //     include("mysql/*.g4", "postgresql/*.g4", "oracle/*.g4")
-        // }
+        // 1) .g4 파일이 있는 디렉터리 지정
+        source = fileTree("src/main/antlr") {
+            include(
+                "mysql/*.g4",      // MySQL Lexer+Parser
+                "postgresql/*.g4", // PostgreSQL Lexer+Parser
+                "oracle/*.g4"      // Oracle Combined Grammar (PlSql.g4)
+            )
+        }
 
-        // ▶ ANTLR 옵션: Visitor 생성하며, 패키지 경로 지정
+        // 2) ANTLR 컴파일러 옵션: Visitor 생성 + 패키지 지정
         arguments = listOf(
             "-visitor",
-            "-package", "com.github.frostycityman.inlinesqlcommentor"
+            "-package", "com.github.frostycityman.inlinesqlcommentor.sql.parser.generated"
         )
 
-        // ▶ 생성된 Java 소스가 저장되는 위치
+        // 3) 생성된 Java 코드를 저장할 위치
         outputDirectory = file("src/main/gen")
+
+        // ── **내장 ANTLR**에서는 `libraries` 옵션을 지원하지 않으므로 제거했습니다 ──
     }
+
     wrapper {
         gradleVersion = providers.gradleProperty("gradleVersion").get()
+        distributionType = Wrapper.DistributionType.ALL
     }
 
     publishPlugin {
@@ -86,28 +99,29 @@ intellijPlatform {
         name = providers.gradleProperty("pluginName")
         version = providers.gradleProperty("pluginVersion")
 
-        description = providers.fileContents(layout.projectDirectory.file("README.md")).asText.map {
-            val start = "<!-- Plugin description -->"
-            val end = "<!-- Plugin description end -->"
-
-            with(it.lines()) {
-                if (!containsAll(listOf(start, end))) {
-                    throw GradleException("Plugin description section not found in README.md:\n$start ... $end")
+        description = providers.fileContents(layout.projectDirectory.file("README.md"))
+            .asText.map { text ->
+                val start = "<!-- Plugin description -->"
+                val end   = "<!-- Plugin description end -->"
+                val lines = text.lines()
+                if (!lines.containsAll(listOf(start, end))) {
+                    throw GradleException(
+                        "Plugin description section not found in README.md:\n$start ... $end"
+                    )
                 }
-                subList(indexOf(start) + 1, indexOf(end)).joinToString("\n").let(::markdownToHTML)
+                lines.subList(lines.indexOf(start) + 1, lines.indexOf(end))
+                    .joinToString("\n")
+                    .let(::markdownToHTML)
             }
-        }
 
         val changelog = project.changelog
         changeNotes = providers.gradleProperty("pluginVersion").map { pluginVersion ->
-            with(changelog) {
-                renderItem(
-                    (getOrNull(pluginVersion) ?: getUnreleased())
-                        .withHeader(false)
-                        .withEmptySections(false),
-                    Changelog.OutputType.HTML,
-                )
-            }
+            changelog.renderItem(
+                (changelog.getOrNull(pluginVersion) ?: changelog.getUnreleased())
+                    .withHeader(false)
+                    .withEmptySections(false),
+                Changelog.OutputType.HTML
+            )
         }
 
         ideaVersion {
@@ -118,14 +132,14 @@ intellijPlatform {
 
     signing {
         certificateChain = providers.environmentVariable("CERTIFICATE_CHAIN")
-        privateKey = providers.environmentVariable("PRIVATE_KEY")
-        password = providers.environmentVariable("PRIVATE_KEY_PASSWORD")
+        privateKey       = providers.environmentVariable("PRIVATE_KEY")
+        password         = providers.environmentVariable("PRIVATE_KEY_PASSWORD")
     }
 
     publishing {
-        token = providers.environmentVariable("PUBLISH_TOKEN")
-        channels = providers.gradleProperty("pluginVersion").map {
-            listOf(it.substringAfter('-', "").substringBefore('.').ifEmpty { "default" })
+        token    = providers.environmentVariable("PUBLISH_TOKEN")
+        channels = providers.gradleProperty("pluginVersion").map { ver ->
+            listOf(ver.substringAfter('-', "").substringBefore('.').ifEmpty { "default" })
         }
     }
 
@@ -144,9 +158,7 @@ changelog {
 kover {
     reports {
         total {
-            xml {
-                onCheck = true
-            }
+            xml { onCheck = true }
         }
     }
 }
@@ -160,11 +172,10 @@ intellijPlatformTesting {
                         "-Drobot-server.port=8082",
                         "-Dide.mac.message.dialogs.as.sheets=false",
                         "-Djb.privacy.policy.text=<!--999.999-->",
-                        "-Djb.consents.confirmation.enabled=false",
+                        "-Djb.consents.confirmation.enabled=false"
                     )
                 }
             }
-
             plugins {
                 robotServerPlugin()
             }
