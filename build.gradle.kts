@@ -1,4 +1,4 @@
-import org.gradle.api.plugins.antlr.AntlrTask
+
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
@@ -11,7 +11,7 @@ plugins {
     alias(libs.plugins.qodana)
     alias(libs.plugins.kover)
 
-    // ▶ Gradle 내장 ANTLR 플러그인 활성화
+    // Gradle 내장 ANTLR 플러그인
     id("antlr")
 }
 
@@ -24,20 +24,24 @@ kotlin {
 
 repositories {
     mavenCentral()
+    maven { url = uri("https://jitpack.io") } // JitPack 저장소 추가
     intellijPlatform {
         defaultRepositories()
     }
 }
 
 dependencies {
-    // ▶ ANTLR 4.13.2 컴파일러/런타임 의존성
-    antlr("org.antlr:antlr4:4.13.2")
+    // ANTLR 4 런타임/컴파일러
+    antlr("org.antlr:antlr4:4.13.0")
 
-    // ▶ 테스트 의존성
+    // antlr4-intellij-adaptor (JitPack)
+    implementation("com.github.antlr:antlr4-intellij-adaptor:1.3.0")
+
+    // 테스트용
     testImplementation(libs.junit)
     testImplementation(libs.opentest4j)
 
-    // ▶ IntelliJ Platform Plugin 의존성
+    // IntelliJ Platform Plugin
     intellijPlatform {
         create(
             providers.gradleProperty("platformType"),
@@ -51,7 +55,7 @@ dependencies {
     }
 }
 
-// ANTLR이 생성한 Java 코드를 Kotlin/Java 컴파일러가 인식하게 src/main/gen을 소스 루트로 지정
+// ANTLR이 생성한 Java 코드를 컴파일러가 인식하도록 src/main/gen을 소스 루트로 지정
 sourceSets {
     main {
         java {
@@ -61,31 +65,35 @@ sourceSets {
 }
 
 tasks {
-    // ── ANTLR generateGrammarSource 태스크 설정 ──
+    // 내장 ANTLR 플러그인의 generateGrammarSource 설정
     named<AntlrTask>("generateGrammarSource") {
-        // 1) .g4 파일이 있는 디렉터리 지정
-        source = fileTree("src/main/antlr") {
-            include(
-                "mysql/*.g4",      // MySQL Lexer+Parser
-                "postgresql/*.g4", // PostgreSQL Lexer+Parser
-                "oracle/*.g4"      // Oracle Combined Grammar (PlSql.g4)
-            )
-        }
+        // src/main/antlr/**/*.g4 파일을 모두 인식 (별도 지정 불필요)
+        // 필요할 경우, 특정 폴더만 포함하도록 아래처럼 설정 가능:
+        //
+        // source = fileTree("src/main/antlr") {
+        //     include("mysql/*.g4", "postgresql/*.g4", "oracle/PlSql.g4")
+        // }
 
-        // 2) ANTLR 컴파일러 옵션: Visitor 생성 + 패키지 지정
+        // ANTLR 옵션: Visitor 자동 생성 & 패키지 경로 지정
         arguments = listOf(
             "-visitor",
             "-package", "com.github.frostycityman.inlinesqlcommentor.sql.parser.generated"
         )
 
-        // 3) 생성된 Java 코드를 저장할 위치
+        // 생성된 Java 코드를 저장할 위치
         outputDirectory = file("src/main/gen")
 
-        // ── **내장 ANTLR**에서는 `libraries` 옵션을 지원하지 않으므로 제거했습니다 ──
+        // Combined Grammar 한 파일(예: PlSql.g4) 방식이면 libraries 불필요
+        // 별도 Lexer/Parser 쌍을 사용할 때만 libraries 지정:
+        // libraries = listOf(
+        //     file("src/main/antlr/mysql"),
+        //     file("src/main/antlr/postgresql"),
+        //     file("src/main/antlr/oracle")
+        // )
     }
 
     wrapper {
-        gradleVersion = providers.gradleProperty("gradleVersion").get()
+        gradleVersion    = providers.gradleProperty("gradleVersion").get()
         distributionType = Wrapper.DistributionType.ALL
     }
 
@@ -96,24 +104,23 @@ tasks {
 
 intellijPlatform {
     pluginConfiguration {
-        name = providers.gradleProperty("pluginName")
+        name    = providers.gradleProperty("pluginName")
         version = providers.gradleProperty("pluginVersion")
 
-        description = providers.fileContents(layout.projectDirectory.file("README.md"))
-            .asText.map { text ->
-                val start = "<!-- Plugin description -->"
-                val end   = "<!-- Plugin description end -->"
-                val lines = text.lines()
-                if (!lines.containsAll(listOf(start, end))) {
-                    throw GradleException(
-                        "Plugin description section not found in README.md:\n$start ... $end"
-                    )
-                }
-                lines.subList(lines.indexOf(start) + 1, lines.indexOf(end))
-                    .joinToString("\n")
-                    .let(::markdownToHTML)
+        // README.md 에서 Plugin description 추출
+        description = providers.fileContents(layout.projectDirectory.file("README.md")).asText.map {
+            val start = "<!-- Plugin description -->"
+            val end   = "<!-- Plugin description end -->"
+            val lines = it.lines()
+            if (!lines.containsAll(listOf(start, end))) {
+                throw GradleException("Plugin description section not found in README.md:\n$start ... $end")
             }
+            lines.subList(lines.indexOf(start) + 1, lines.indexOf(end))
+                .joinToString("\n")
+                .let(::markdownToHTML)
+        }
 
+        // Changelog 설정
         val changelog = project.changelog
         changeNotes = providers.gradleProperty("pluginVersion").map { pluginVersion ->
             changelog.renderItem(
@@ -139,7 +146,7 @@ intellijPlatform {
     publishing {
         token    = providers.environmentVariable("PUBLISH_TOKEN")
         channels = providers.gradleProperty("pluginVersion").map { ver ->
-            listOf(ver.substringAfter('-', "").substringBefore('.').ifEmpty { "default" })
+            listOf(ver.substringAfter('-').substringBefore('.').ifEmpty { "default" })
         }
     }
 
@@ -158,7 +165,9 @@ changelog {
 kover {
     reports {
         total {
-            xml { onCheck = true }
+            xml {
+                onCheck = true
+            }
         }
     }
 }

@@ -5,9 +5,7 @@ package com.github.frostycityman.inlinesqlcommentor.sql
  */
 class ColumnCommentProvider {
     private val commentMap: Map<String, String> = mapOf(
-        "user_id" to "사용자 고유번호",
-        "created_at" to "생성 시각",
-        "status" to "상태 코드"
+        "user_id" to "사용자 고유번호", "created_at" to "생성 시각", "status" to "상태 코드"
     )
 
     /**
