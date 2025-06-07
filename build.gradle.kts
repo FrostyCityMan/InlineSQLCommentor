@@ -66,8 +66,6 @@ tasks {
         // 1) .g4 파일이 있는 디렉터리 지정
         source = fileTree("src/main/antlr") {
             include(
-                "mysql/*.g4",      // MySQL Lexer+Parser
-                "postgresql/*.g4", // PostgreSQL Lexer+Parser
                 "oracle/*.g4"      // Oracle Combined Grammar (PlSql.g4)
             )
         }
@@ -79,9 +77,8 @@ tasks {
         )
 
         // 3) 생성된 Java 코드를 저장할 위치
-        outputDirectory = file("src/main/gen")
+        outputDirectory = file("src/main/kotlin/com/github/frostycityman/inlinesqlcommentor/sql/parser/generated")
 
-        // ── **내장 ANTLR**에서는 `libraries` 옵션을 지원하지 않으므로 제거했습니다 ──
     }
 
     wrapper {
@@ -102,7 +99,7 @@ intellijPlatform {
         description = providers.fileContents(layout.projectDirectory.file("README.md"))
             .asText.map { text ->
                 val start = "<!-- Plugin description -->"
-                val end   = "<!-- Plugin description end -->"
+                val end = "<!-- Plugin description end -->"
                 val lines = text.lines()
                 if (!lines.containsAll(listOf(start, end))) {
                     throw GradleException(
@@ -132,12 +129,12 @@ intellijPlatform {
 
     signing {
         certificateChain = providers.environmentVariable("CERTIFICATE_CHAIN")
-        privateKey       = providers.environmentVariable("PRIVATE_KEY")
-        password         = providers.environmentVariable("PRIVATE_KEY_PASSWORD")
+        privateKey = providers.environmentVariable("PRIVATE_KEY")
+        password = providers.environmentVariable("PRIVATE_KEY_PASSWORD")
     }
 
     publishing {
-        token    = providers.environmentVariable("PUBLISH_TOKEN")
+        token = providers.environmentVariable("PUBLISH_TOKEN")
         channels = providers.gradleProperty("pluginVersion").map { ver ->
             listOf(ver.substringAfter('-', "").substringBefore('.').ifEmpty { "default" })
         }

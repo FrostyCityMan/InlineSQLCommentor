@@ -15,12 +15,13 @@
 	<depends>com.intellij.database</depends>
 	
 	<actions>
-		<action id="InlineSQLCommentorAction"
-				class="com.github.frostycityman.inlinesqlcommentor.action.MyPluginAction"
-				text="Inline SQL Comment 삽입"
-				description="SQL 컬럼 옆에 주석을 삽입합니다.">
-			<add-to-group group-id="EditorPopupMenu" anchor="last"/>
+		<action id="AutoCommentSql"
+				class="com.github.frostycityman.inlinesqlcommentor.action.AutoCommentSqlAction"
+				text="SQL 컬럼 주석 삽입"
+				description="현재 에디터의 SQL에 컬럼 주석을 자동으로 추가">
+			<keyboard-shortcut keymap="$default" first-keystroke="ctrl alt C"/>
 		</action>
 	</actions>
+
 
 </idea-plugin>
