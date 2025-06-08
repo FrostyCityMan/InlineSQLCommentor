@@ -9,16 +9,17 @@
 	<resource-bundle>messages.MyBundle</resource-bundle>
 	
 	<extensions defaultExtensionNs="com.intellij">
-		<!--		<toolWindow factoryClass="com.github.frostycityman.inlinesqlcommentor.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>-->
+		<toolWindow factoryClass="com.github.frostycityman.inlinesqlcommentor.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
 		<postStartupActivity implementation="com.github.frostycityman.inlinesqlcommentor.startup.MyProjectActivity"/>
 	</extensions>
 	<depends>com.intellij.database</depends>
 	
 	<actions>
-		<action id="AutoCommentSql"
-				class="com.github.frostycityman.inlinesqlcommentor.action.AutoCommentSqlAction"
-				text="SQL 컬럼 주석 삽입"
-				description="현재 에디터의 SQL에 컬럼 주석을 자동으로 추가">
+		<action id="AutoCommentAction"
+				class="com.github.frostycityman.inlinesqlcommentor.action.AutoCommentAction"
+				text="SQL 컬럼 자동 주석 삽입"
+				description="SQL문에 컬럼 설명을 주석으로 자동 삽입">
+			<add-to-group group-id="EditorPopupMenu" anchor="first"/>
 			<keyboard-shortcut keymap="$default" first-keystroke="ctrl alt C"/>
 		</action>
 	</actions>
