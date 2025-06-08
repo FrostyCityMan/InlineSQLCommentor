@@ -1,5 +1,5 @@
 // Generated from oracle/plsql.g4 by ANTLR 4.13.2
-package com.github.frostycityman.inlinesqlcommentor.sql.parser.generated;
+package com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle;
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.Token;
@@ -5159,7 +5159,7 @@ public class plsqlLexer extends Lexer {
 		"\u1a20\u1a2b\u1a37\u1a39\u1a5b\u1a5d\u1a65\u1a7b\u1a97\u1aa0\u1aa5\u1aa9"+
 		"\u1aae\u1ab6\u1abb\u1ac5\u1ad8\u1add\u1ae0\u1ae9\u1aeb\u0003\u0007\u0281"+
 		"\u0000\u0006\u0000\u0000\u0000\u0001\u0000";
-	public static final String _serializedATN = Utils.<String>join(
+	public static final String _serializedATN = Utils.join(
 		new String[] {
 			_serializedATNSegment0,
 			_serializedATNSegment1,

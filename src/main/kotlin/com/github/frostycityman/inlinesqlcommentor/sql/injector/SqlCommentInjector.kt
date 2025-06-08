@@ -1,16 +1,17 @@
 package com.github.frostycityman.inlinesqlcommentor.sql.injector
 
+import com.github.frostycityman.inlinesqlcommentor.sql.parser.ColumnCommentVisitor
 import com.github.frostycityman.inlinesqlcommentor.sql.provider.ColumnCommentProvider
 import com.github.frostycityman.inlinesqlcommentor.sql.parser.SqlColumnCommentVisitor
-import com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlsqlLexer
-import com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlsqlParser
+import com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.plsqlLexer
+import com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.plsqlParser
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import java.lang.StringBuilder
 
 /**
  * Oracle PL/SQL 전용 Injector.
- * gen/oracle 아래에 생성된 PlsqlLexer·PlsqlParser를 사용합니다.
+ * gen/oracle 아래에 생성된 plsqlLexer·plsqlParser를 사용합니다.
  */
 class SqlCommentInjector(
     private val commentProvider: ColumnCommentProvider
@@ -21,15 +22,15 @@ class SqlCommentInjector(
      */
     fun injectComments(originalSql: String): String {
         // 1) ANTLR 렉서/파서 초기화
-        val lexer  = PlsqlLexer(CharStreams.fromString(originalSql))
+        val lexer  = plsqlLexer(CharStreams.fromString(originalSql))
         val tokens = CommonTokenStream(lexer)
-        val parser = PlsqlParser(tokens)
+        val parser = plsqlParser(tokens)
 
         // 2) 최상위 규칙(sql_script) 호출
         val tree = parser.sql_script()
 
         // 3) 커스텀 Visitor로 SELECT 절의 컬럼 추출
-        val visitor = PlsqlColumnCommentVisitor()
+        val visitor = ColumnCommentVisitor()
         visitor.visit(tree)
         val columns = visitor.getColumns() // List<Pair<tableName, columnName>>
 

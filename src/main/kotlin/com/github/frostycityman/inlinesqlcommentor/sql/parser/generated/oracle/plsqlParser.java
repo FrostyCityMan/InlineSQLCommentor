@@ -1,5 +1,5 @@
 // Generated from oracle/plsql.g4 by ANTLR 4.13.2
-package com.github.frostycityman.inlinesqlcommentor.sql.parser.generated;
+package com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle;
 import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.*;

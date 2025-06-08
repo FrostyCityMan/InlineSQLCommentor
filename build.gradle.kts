@@ -51,11 +51,11 @@ dependencies {
     }
 }
 
-// ANTLR이 생성한 Java 코드를 Kotlin/Java 컴파일러가 인식하게 src/main/gen을 소스 루트로 지정
+// ANTLR이 생성한 Java 코드를 Kotlin/Java 컴파일러가 인식하게 src/main/kotlin 소스 루트로 지정
 sourceSets {
     main {
         java {
-            srcDir("src/main/gen")
+            srcDir("src/main/kotlin")
         }
     }
 }
