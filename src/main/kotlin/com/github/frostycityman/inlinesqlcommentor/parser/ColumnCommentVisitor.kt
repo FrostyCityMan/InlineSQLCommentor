@@ -1,12 +1,11 @@
 package com.github.frostycityman.inlinesqlcommentor.parser
+//
+import com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlLexer
+import com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser
+import com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParserBaseVisitor
+import groovyjarjarantlr4.v4.runtime.*
 
-import plsql.parser.PlSqlLexer
-import plsql.parser.PlSqlParser
-import plsql.parser.PlSqlParserBaseVisitor
-import org.antlr.v4.runtime.CharStreams
-import org.antlr.v4.runtime.CommonTokenStream
-
-class ColumnCommentVisitor : PlSqlParserBaseVisitor<Unit>() {
+abstract class ColumnCommentVisitor : PlSqlParserBaseVisitor<Unit>() {
 
     private val columns = mutableListOf<String>()
 
