@@ -1,5 +1,6 @@
 package com.github.frostycityman.inlinesqlcommentor.action
 
+//import com.github.frostycityman.inlinesqlcommentor.injector.SqlCommentInjector
 import com.github.frostycityman.inlinesqlcommentor.injector.SqlCommentInjector
 import com.github.frostycityman.inlinesqlcommentor.provider.DummyColumnCommentProvider
 import com.intellij.openapi.actionSystem.AnAction

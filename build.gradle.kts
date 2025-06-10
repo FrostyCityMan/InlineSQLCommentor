@@ -54,10 +54,9 @@ dependencies {
 }
 tasks.generateGrammarSource {
     // ANTLR 문법파일 위치 지정
-    source = fileTree("${project.projectDir}") {
+    source = fileTree("src/main/antlr") {
         include("PlSqlLexer.g4", "PlSqlParser.g4")
     }
-
     // ANTLR 설정: visitor와 listener 모두 생성 및 패키지 지정
     arguments = listOf(
         "-visitor",
@@ -65,15 +64,20 @@ tasks.generateGrammarSource {
         "-package", "com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle"
     )
 
+
     // 생성된 코드가 위치할 디렉토리 설정
-    outputDirectory = file("${buildDir}/generated-src/antlr/main")
+    outputDirectory = file("src/main/gen")
+}
+tasks.compileKotlin {
+    dependsOn(tasks.generateGrammarSource)
 }
 
 sourceSets {
     main {
-        java.srcDir("${buildDir}/generated-src/antlr/main")
+        kotlin.srcDir("src/main/gen")
     }
 }
+
 // Configure IntelliJ Platform Gradle Plugin - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-extension.html
 intellijPlatform {
     pluginConfiguration {
