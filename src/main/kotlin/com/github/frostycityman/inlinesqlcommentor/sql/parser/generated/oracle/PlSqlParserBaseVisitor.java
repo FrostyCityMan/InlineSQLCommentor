@@ -11,49 +11,49 @@ import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
  * operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
-public class PlSqlParserBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements PlSqlParserVisitor<T> {
+public class PlSqlParserBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParserVisitor<T> {
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitSql_script(PlSqlParser.Sql_scriptContext ctx) { return visitChildren(ctx); }
+	@Override public T visitSql_script(com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser.Sql_scriptContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitUnit_statement(PlSqlParser.Unit_statementContext ctx) { return visitChildren(ctx); }
+	@Override public T visitUnit_statement(com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser.Unit_statementContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitAlter_diskgroup(PlSqlParser.Alter_diskgroupContext ctx) { return visitChildren(ctx); }
+	@Override public T visitAlter_diskgroup(com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser.Alter_diskgroupContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitAdd_disk_clause(PlSqlParser.Add_disk_clauseContext ctx) { return visitChildren(ctx); }
+	@Override public T visitAdd_disk_clause(com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser.Add_disk_clauseContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitDrop_disk_clause(PlSqlParser.Drop_disk_clauseContext ctx) { return visitChildren(ctx); }
+	@Override public T visitDrop_disk_clause(com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser.Drop_disk_clauseContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitResize_disk_clause(PlSqlParser.Resize_disk_clauseContext ctx) { return visitChildren(ctx); }
+	@Override public T visitResize_disk_clause(com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser.Resize_disk_clauseContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

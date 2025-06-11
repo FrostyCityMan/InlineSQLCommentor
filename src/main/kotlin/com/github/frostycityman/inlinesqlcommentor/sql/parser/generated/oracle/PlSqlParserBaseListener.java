@@ -5,25 +5,26 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
+import com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser;
 /**
  * This class provides an empty implementation of {@link PlSqlParserListener},
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
 @SuppressWarnings("CheckReturnValue")
-public class PlSqlParserBaseListener implements PlSqlParserListener {
+public class PlSqlParserBaseListener implements com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParserListener {
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterSql_script(PlSqlParser.Sql_scriptContext ctx) { }
+	@Override public void enterSql_script(com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser.Sql_scriptContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitSql_script(PlSqlParser.Sql_scriptContext ctx) { }
+	@Override public void exitSql_script(com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser.Sql_scriptContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -41,7 +42,7 @@ public class PlSqlParserBaseListener implements PlSqlParserListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterAlter_diskgroup(PlSqlParser.Alter_diskgroupContext ctx) { }
+	@Override public void enterAlter_diskgroup(com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser.Alter_diskgroupContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
