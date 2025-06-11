@@ -1,124 +1,113 @@
-import org.gradle.api.plugins.antlr.AntlrTask
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
-plugins {
-    id("java")
-    alias(libs.plugins.kotlin)
-    alias(libs.plugins.intelliJPlatform)
-    alias(libs.plugins.changelog)
-    alias(libs.plugins.qodana)
-    alias(libs.plugins.kover)
 
-    // ▶ Gradle 내장 ANTLR 플러그인 활성화
+plugins {
+    id("java") // Java support
+    alias(libs.plugins.kotlin) // Kotlin support
+    alias(libs.plugins.intelliJPlatform) // IntelliJ Platform Gradle Plugin
+    alias(libs.plugins.changelog) // Gradle Changelog Plugin
+    alias(libs.plugins.qodana) // Gradle Qodana Plugin
+    alias(libs.plugins.kover) // Gradle Kover Plugin
     id("antlr")
 }
 
 group = providers.gradleProperty("pluginGroup").get()
 version = providers.gradleProperty("pluginVersion").get()
 
+// Set the JVM language level used to build the project.
 kotlin {
     jvmToolchain(21)
 }
 
+// Configure project's dependencies
 repositories {
     mavenCentral()
+    maven("https://jitpack.io")
+    // IntelliJ Platform Gradle Plugin Repositories Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-repositories-extension.html
     intellijPlatform {
         defaultRepositories()
+
     }
 }
 
+// Dependencies are managed with Gradle version catalog - read more: https://docs.gradle.org/current/userguide/platforms.html#sub:version-catalog
 dependencies {
-    // ▶ ANTLR 4.13.2 컴파일러/런타임 의존성
-    antlr("org.antlr:antlr4:4.13.2")
-
-    // ▶ 테스트 의존성
     testImplementation(libs.junit)
     testImplementation(libs.opentest4j)
 
-    // ▶ IntelliJ Platform Plugin 의존성
+    implementation("org.antlr:antlr4-runtime:4.13.1")
+    antlr("org.antlr:antlr4:4.13.1")
+    // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
     intellijPlatform {
-        create(
-            providers.gradleProperty("platformType"),
-            providers.gradleProperty("platformVersion")
-        )
-        bundledPlugins(
-            providers.gradleProperty("platformBundledPlugins")
-                .map { it.split(',') }
-        )
+        create(providers.gradleProperty("platformType"), providers.gradleProperty("platformVersion"))
+
+        // 플러그인 종속성. Bundled Intellij 플랫폼 플러그인 용 gradle.properties 파일의`PlatformBundledPlugins '속성을 사용합니다.
+        bundledPlugins(providers.gradleProperty("platformBundledPlugins").map { it.split(',') })
+
+        // Plugin Dependencies. Uses `platformPlugins` property from the gradle.properties file for plugin from JetBrains Marketplace.
+//        plugins(providers.gradleProperty("platformPlugins").map { it.split(',') })
+
         testFramework(TestFrameworkType.Platform)
     }
 }
+tasks.generateGrammarSource {
+    // ANTLR 문법파일 위치 지정
+    source = fileTree("src/main/antlr") {
+        include("PlSqlLexer.g4", "PlSqlParser.g4")
+    }
+    // ANTLR 설정: visitor와 listener 모두 생성 및 패키지 지정
+    arguments = listOf(
+        "-visitor",
+        "-listener",
+        "-package", "com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle"
+    )
 
-// ANTLR이 생성한 Java 코드를 Kotlin/Java 컴파일러가 인식하게 src/main/kotlin 소스 루트로 지정
+
+    // 생성된 코드가 위치할 디렉토리 설정
+    outputDirectory = file("src/main/gen")
+}
+tasks.compileKotlin {
+    dependsOn(tasks.generateGrammarSource)
+}
+
 sourceSets {
     main {
-        java {
-            srcDir("src/main/kotlin")
-        }
+        kotlin.srcDir("src/main/gen")
     }
 }
 
-tasks {
-    // ── ANTLR generateGrammarSource 태스크 설정 ──
-    named<AntlrTask>("generateGrammarSource") {
-        // 1) .g4 파일이 있는 디렉터리 지정
-        source = fileTree("src/main/antlr") {
-            include(
-                "oracle/*.g4"      // Oracle Combined Grammar (PlSql.g4)
-            )
-        }
-
-        // 2) ANTLR 컴파일러 옵션: Visitor 생성 + 패키지 지정
-        arguments = listOf(
-            "-visitor",
-            "-package", "com.github.frostycityman.inlinesqlcommentor.sql.parser.generated"
-        )
-
-        // 3) 생성된 Java 코드를 저장할 위치
-        outputDirectory = file("src/main/kotlin/com/github/frostycityman/inlinesqlcommentor/sql/parser/generated")
-
-    }
-
-    wrapper {
-        gradleVersion = providers.gradleProperty("gradleVersion").get()
-        distributionType = Wrapper.DistributionType.ALL
-    }
-
-    publishPlugin {
-        dependsOn(patchChangelog)
-    }
-}
-
+// Configure IntelliJ Platform Gradle Plugin - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-extension.html
 intellijPlatform {
     pluginConfiguration {
         name = providers.gradleProperty("pluginName")
         version = providers.gradleProperty("pluginVersion")
 
-        description = providers.fileContents(layout.projectDirectory.file("README.md"))
-            .asText.map { text ->
-                val start = "<!-- Plugin description -->"
-                val end = "<!-- Plugin description end -->"
-                val lines = text.lines()
-                if (!lines.containsAll(listOf(start, end))) {
-                    throw GradleException(
-                        "Plugin description section not found in README.md:\n$start ... $end"
-                    )
-                }
-                lines.subList(lines.indexOf(start) + 1, lines.indexOf(end))
-                    .joinToString("\n")
-                    .let(::markdownToHTML)
-            }
+        // Extract the <!-- Plugin description --> section from README.md and provide for the plugin's manifest
+        description = providers.fileContents(layout.projectDirectory.file("README.md")).asText.map {
+            val start = "<!-- Plugin description -->"
+            val end = "<!-- Plugin description end -->"
 
-        val changelog = project.changelog
+            with(it.lines()) {
+                if (!containsAll(listOf(start, end))) {
+                    throw GradleException("Plugin description section not found in README.md:\n$start ... $end")
+                }
+                subList(indexOf(start) + 1, indexOf(end)).joinToString("\n").let(::markdownToHTML)
+            }
+        }
+
+        val changelog = project.changelog // local variable for configuration cache compatibility
+        // Get the latest available change notes from the changelog file
         changeNotes = providers.gradleProperty("pluginVersion").map { pluginVersion ->
-            changelog.renderItem(
-                (changelog.getOrNull(pluginVersion) ?: changelog.getUnreleased())
-                    .withHeader(false)
-                    .withEmptySections(false),
-                Changelog.OutputType.HTML
-            )
+            with(changelog) {
+                renderItem(
+                    (getOrNull(pluginVersion) ?: getUnreleased())
+                        .withHeader(false)
+                        .withEmptySections(false),
+                    Changelog.OutputType.HTML,
+                )
+            }
         }
 
         ideaVersion {
@@ -135,9 +124,10 @@ intellijPlatform {
 
     publishing {
         token = providers.environmentVariable("PUBLISH_TOKEN")
-        channels = providers.gradleProperty("pluginVersion").map { ver ->
-            listOf(ver.substringAfter('-', "").substringBefore('.').ifEmpty { "default" })
-        }
+        // The pluginVersion is based on the SemVer (https://semver.org) and supports pre-release labels, like 2.1.7-alpha.3
+        // Specify pre-release label to publish the plugin in a custom Release Channel automatically. Read more:
+        // https://plugins.jetbrains.com/docs/intellij/deployment.html#specifying-a-release-channel
+        channels = providers.gradleProperty("pluginVersion").map { listOf(it.substringAfter('-', "").substringBefore('.').ifEmpty { "default" }) }
     }
 
     pluginVerification {
@@ -147,16 +137,30 @@ intellijPlatform {
     }
 }
 
+// Configure Gradle Changelog Plugin - read more: https://github.com/JetBrains/gradle-changelog-plugin
 changelog {
     groups.empty()
     repositoryUrl = providers.gradleProperty("pluginRepositoryUrl")
 }
 
+// Configure Gradle Kover Plugin - read more: https://github.com/Kotlin/kotlinx-kover#configuration
 kover {
     reports {
         total {
-            xml { onCheck = true }
+            xml {
+                onCheck = true
+            }
         }
+    }
+}
+
+tasks {
+    wrapper {
+        gradleVersion = providers.gradleProperty("gradleVersion").get()
+    }
+
+    publishPlugin {
+        dependsOn(patchChangelog)
     }
 }
 
@@ -169,10 +173,11 @@ intellijPlatformTesting {
                         "-Drobot-server.port=8082",
                         "-Dide.mac.message.dialogs.as.sheets=false",
                         "-Djb.privacy.policy.text=<!--999.999-->",
-                        "-Djb.consents.confirmation.enabled=false"
+                        "-Djb.consents.confirmation.enabled=false",
                     )
                 }
             }
+
             plugins {
                 robotServerPlugin()
             }
