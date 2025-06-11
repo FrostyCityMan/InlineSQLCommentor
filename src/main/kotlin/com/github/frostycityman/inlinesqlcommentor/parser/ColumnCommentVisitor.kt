@@ -4,19 +4,21 @@ import com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.P
 import com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser
 import com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParserBaseVisitor
 import groovyjarjarantlr4.v4.runtime.*
+import org.antlr.v4.runtime.CharStream
+import org.antlr.v4.runtime.TokenStream
 
-abstract class ColumnCommentVisitor : PlSqlParserBaseVisitor<Unit>() {
+class ColumnCommentVisitor : PlSqlParserBaseVisitor<Unit>() {
 
     private val columns = mutableListOf<String>()
 
     override fun visitSelected_list(ctx: PlSqlParser.Selected_listContext) {
         ctx.select_list_elements().forEach { element ->
             element.expression()?.let { expr ->
-                expr.column_name()?.let { columnCtx ->
+                expr.logical_expression()?.let { columnCtx ->
                     columns += columnCtx.text
                 }
 
-                expr.general_element()?.let { generalCtx ->
+                expr.cursor_expression()?.let { generalCtx ->
                     columns += generalCtx.text
                 }
             }
@@ -25,9 +27,9 @@ abstract class ColumnCommentVisitor : PlSqlParserBaseVisitor<Unit>() {
     }
 
     fun parseColumns(sql: String): List<String> {
-        val lexer = PlSqlLexer(CharStreams.fromString(sql))
-        val tokens = CommonTokenStream(lexer)
-        val parser = PlSqlParser(tokens)
+        val lexer = PlSqlLexer(CharStreams.fromString(sql) as CharStream?)
+        val tokens = CommonTokenStream(lexer as TokenSource?)
+        val parser = PlSqlParser(tokens as TokenStream?)
         visit(parser.sql_script())
         return columns.toList()
     }

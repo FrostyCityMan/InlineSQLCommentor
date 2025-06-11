@@ -15,37 +15,37 @@ public interface PlSqlParserVisitor<T> extends ParseTreeVisitor<T> {
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitSql_script(PlSqlParser.Sql_scriptContext ctx);
+	T visitSql_script(com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser.Sql_scriptContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link PlSqlParser#unit_statement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitUnit_statement(PlSqlParser.Unit_statementContext ctx);
+	T visitUnit_statement(com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser.Unit_statementContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link PlSqlParser#alter_diskgroup}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitAlter_diskgroup(PlSqlParser.Alter_diskgroupContext ctx);
+	T visitAlter_diskgroup(com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser.Alter_diskgroupContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link PlSqlParser#add_disk_clause}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitAdd_disk_clause(PlSqlParser.Add_disk_clauseContext ctx);
+	T visitAdd_disk_clause(com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser.Add_disk_clauseContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link PlSqlParser#drop_disk_clause}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitDrop_disk_clause(PlSqlParser.Drop_disk_clauseContext ctx);
+	T visitDrop_disk_clause(com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser.Drop_disk_clauseContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link PlSqlParser#resize_disk_clause}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitResize_disk_clause(PlSqlParser.Resize_disk_clauseContext ctx);
+	T visitResize_disk_clause(com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser.Resize_disk_clauseContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link PlSqlParser#replace_disk_clause}.
 	 * @param ctx the parse tree

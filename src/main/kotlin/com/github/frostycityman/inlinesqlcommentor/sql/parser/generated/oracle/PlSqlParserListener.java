@@ -1,7 +1,7 @@
 // Generated from PlSqlParser.g4 by ANTLR 4.13.1
 package com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
-
+import com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser;
 /**
  * This interface defines a complete listener for a parse tree produced by
  * {@link PlSqlParser}.
@@ -11,47 +11,47 @@ public interface PlSqlParserListener extends ParseTreeListener {
 	 * Enter a parse tree produced by {@link PlSqlParser#sql_script}.
 	 * @param ctx the parse tree
 	 */
-	void enterSql_script(PlSqlParser.Sql_scriptContext ctx);
+	void enterSql_script(com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser.Sql_scriptContext ctx);
 	/**
 	 * Exit a parse tree produced by {@link PlSqlParser#sql_script}.
 	 * @param ctx the parse tree
 	 */
-	void exitSql_script(PlSqlParser.Sql_scriptContext ctx);
+	void exitSql_script(com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser.Sql_scriptContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link PlSqlParser#unit_statement}.
 	 * @param ctx the parse tree
 	 */
-	void enterUnit_statement(PlSqlParser.Unit_statementContext ctx);
+	void enterUnit_statement(com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser.Unit_statementContext ctx);
 	/**
 	 * Exit a parse tree produced by {@link PlSqlParser#unit_statement}.
 	 * @param ctx the parse tree
 	 */
-	void exitUnit_statement(PlSqlParser.Unit_statementContext ctx);
+	void exitUnit_statement(com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser.Unit_statementContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link PlSqlParser#alter_diskgroup}.
 	 * @param ctx the parse tree
 	 */
-	void enterAlter_diskgroup(PlSqlParser.Alter_diskgroupContext ctx);
+	void enterAlter_diskgroup(com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser.Alter_diskgroupContext ctx);
 	/**
 	 * Exit a parse tree produced by {@link PlSqlParser#alter_diskgroup}.
 	 * @param ctx the parse tree
 	 */
-	void exitAlter_diskgroup(PlSqlParser.Alter_diskgroupContext ctx);
+	void exitAlter_diskgroup(com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser.Alter_diskgroupContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link PlSqlParser#add_disk_clause}.
 	 * @param ctx the parse tree
 	 */
-	void enterAdd_disk_clause(PlSqlParser.Add_disk_clauseContext ctx);
+	void enterAdd_disk_clause(com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser.Add_disk_clauseContext ctx);
 	/**
 	 * Exit a parse tree produced by {@link PlSqlParser#add_disk_clause}.
 	 * @param ctx the parse tree
 	 */
-	void exitAdd_disk_clause(PlSqlParser.Add_disk_clauseContext ctx);
+	void exitAdd_disk_clause(com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser.Add_disk_clauseContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link PlSqlParser#drop_disk_clause}.
 	 * @param ctx the parse tree
 	 */
-	void enterDrop_disk_clause(PlSqlParser.Drop_disk_clauseContext ctx);
+	void enterDrop_disk_clause(com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser.Drop_disk_clauseContext ctx);
 	/**
 	 * Exit a parse tree produced by {@link PlSqlParser#drop_disk_clause}.
 	 * @param ctx the parse tree
