@@ -3,8 +3,6 @@ package com.github.frostycityman.inlinesqlcommentor.action
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.command.WriteCommandAction
-import com.github.frostycityman.inlinesqlcommentor.sql.injector.SqlCommentInjector
 import com.github.frostycityman.inlinesqlcommentor.sql.provider.DummyColumnCommentProvider
 
 /**
@@ -20,14 +18,14 @@ class AutoCommentSqlAction : AnAction() {
 
         // 1) DummyProvider 대신 실제 DB Provider를 주입할 수 있습니다.
         val provider = DummyColumnCommentProvider()
-        val injector = SqlCommentInjector(project, provider)
+//        val injector = SqlCommentInjector(project, provider)
 
         // 2) 주석이 삽입된 새로운 SQL 생성
-        val newSql = injector.injectComments(originalSql)
+//        val newSql = injector.injectComments(originalSql)
 
         // 3) 문서 수정은 WriteCommandAction 내에서 수행해야 합니다.
-        WriteCommandAction.runWriteCommandAction(project) {
-            document.setText(newSql)
-        }
+//        WriteCommandAction.runWriteCommandAction(project) {
+//            document.setText(newSql)
+//        }
     }
 }

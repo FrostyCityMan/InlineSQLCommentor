@@ -51,6 +51,7 @@ dependencies {
 
         testFramework(TestFrameworkType.Platform)
     }
+    implementation(kotlin("test"))
 }
 tasks.generateGrammarSource {
     // ANTLR 문법파일 위치 지정
@@ -66,7 +67,7 @@ tasks.generateGrammarSource {
 
 
     // 생성된 코드가 위치할 디렉토리 설정
-    outputDirectory = file("src/main/gen")
+    outputDirectory = file("src/main/kotlin/com/github/frostycityman/inlinesqlcommentor/sql/parser/generated/oracle")
 }
 tasks.compileKotlin {
     dependsOn(tasks.generateGrammarSource)
@@ -74,7 +75,7 @@ tasks.compileKotlin {
 
 sourceSets {
     main {
-        kotlin.srcDir("src/main/gen")
+        kotlin.srcDir("src/main/kotlin")
     }
 }
 

@@ -1,36 +1,51 @@
 package com.github.frostycityman.inlinesqlcommentor.sql.parser
 
-import com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.plsqlBaseVisitor
-import com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.plsqlParser
+import com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlLexer
+import com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParserBaseVisitor
+import com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser
+import org.antlr.v4.runtime.CharStreams
+import org.antlr.v4.runtime.CommonTokenStream
 
 
 /**
  * SELECT 절의 각 컬럼 식별자를 수집하는 방문자(Visitor).
  * MySqlParser를 기준으로 했지만, PostgreSQL이나 Oracle도 유사하게 구현할 수 있습니다.
  */
-class ColumnCommentVisitor : plsqlBaseVisitor<Unit>() {
-    // 방문 중 발견되는 컬럼명(식별자) 목록
+/**
+ * PL/SQL SELECT 절에서 컬럼 이름을 수집하는 Visitor
+ * gen/oracle 디렉터리의 기본 패키지에 생성된 ANTLR 클래스를 사용합니다.
+ */
+class ColumnCommentVisitor : PlSqlParserBaseVisitor<Unit>() {
     private val columns = mutableListOf<String>()
 
     /**
-     * SELECT_listContext는 MySQL 문법에서 SELECT 절의 컬럼 목록을 나타냅니다.
-     * 각 컬럼 식별자(ID)를 확인하여 리스트에 추가합니다.
+     * SELECT 문(statement) 노드를 방문하여, select_list 안의 column_name과 general_element를 수집
      */
-    override fun visitSelect_list(ctx: plsqlParser.Select_statementContext) {
-        // MySQL SELECT_listContext 아래의 columnContext들을 순회
-        ctx.column().forEach { columnCtx ->
-            // columnContext 내 IDENTIFIER() 토큰을 가져와 .text로 컬럼명 획득
-            val idToken = columnCtx.uid()?.text ?: columnCtx.IDENTIFIER()?.text
-            if (idToken != null) {
-                columns += idToken
+    override fun visitSelected_list(ctx: PlSqlParser.Selected_listContext) {
+        ctx.select_list_elements().forEach { element ->
+            element.expression()?.let { expr ->
+                element.column_alias()?.let { colCtx ->
+                    columns += colCtx.text
+                }
+
             }
         }
-        // 하위 노드도 계속 방문
-        super.visitSelect_list(ctx)
+        super.visitSelected_list(ctx)
     }
 
     /**
-     * 방문을 마친 후, 수집된 컬럼명 리스트를 반환합니다.
+     * 주어진 SQL을 파싱하여 컬럼명을 추출
      */
-    fun getColumns(): List<String> = columns.toList()
+    fun parseColumns(sql: String): List<String> {
+        val lexer = PlSqlLexer(CharStreams.fromString(sql))
+        val tokens = CommonTokenStream(lexer)
+        val parser = PlSqlParser(tokens)
+        visit(parser.sql_script())
+        return columns.toList()
+    }
+
+    fun main() {
+        println("Hello, Kotlin!")
+    }
+
 }
