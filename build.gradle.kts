@@ -18,7 +18,7 @@ version = providers.gradleProperty("pluginVersion").get()
 
 // Set the JVM language level used to build the project.
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(17)
 }
 
 // Configure project's dependencies
@@ -46,38 +46,42 @@ dependencies {
         // 플러그인 종속성. Bundled Intellij 플랫폼 플러그인 용 gradle.properties 파일의`PlatformBundledPlugins '속성을 사용합니다.
         bundledPlugins(providers.gradleProperty("platformBundledPlugins").map { it.split(',') })
 
-        // Plugin Dependencies. Uses `platformPlugins` property from the gradle.properties file for plugin from JetBrains Marketplace.
-//        plugins(providers.gradleProperty("platformPlugins").map { it.split(',') })
 
         testFramework(TestFrameworkType.Platform)
     }
     implementation(kotlin("test"))
 }
 tasks.generateGrammarSource {
-    // ANTLR 문법파일 위치 지정
     source = fileTree("src/main/antlr") {
         include("PlSqlLexer.g4", "PlSqlParser.g4")
     }
-    // ANTLR 설정: visitor와 listener 모두 생성 및 패키지 지정
     arguments = listOf(
         "-visitor",
         "-listener",
         "-package", "com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle"
     )
-
-
-    // 생성된 코드가 위치할 디렉토리 설정
-    outputDirectory = file("src/main/kotlin/com/github/frostycityman/inlinesqlcommentor/sql/parser/generated/oracle")
-}
-tasks.compileKotlin {
-    dependsOn(tasks.generateGrammarSource)
+   outputDirectory = file("src/main/gen/com/github/frostycityman/inlinesqlcommentor/sql/parser/generated/oracle")
 }
 
 sourceSets {
     main {
-        kotlin.srcDir("src/main/kotlin")
+        java {
+            srcDirs("src/main/gen")
+        }
+        kotlin {
+            srcDirs("src/main/kotlin")
+        }
     }
 }
+
+tasks.compileKotlin {
+    dependsOn(tasks.generateGrammarSource)
+}
+
+tasks.compileJava {
+    dependsOn(tasks.generateGrammarSource)
+}
+
 
 // Configure IntelliJ Platform Gradle Plugin - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-extension.html
 intellijPlatform {
