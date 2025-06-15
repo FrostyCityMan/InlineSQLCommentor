@@ -1,5 +1,6 @@
 package com.github.frostycityman.inlinesqlcommentor.sql.parser
 
+import ai.grazie.utils.text
 import com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlLexer
 import com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParserBaseVisitor
 import com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser
@@ -23,10 +24,12 @@ class ColumnCommentVisitor : PlSqlParserBaseVisitor<Unit>() {
      */
     override fun visitSelected_list(ctx: PlSqlParser.Selected_listContext) {
         ctx.select_list_elements().forEach { element ->
-            element.expression()?.let { expr ->
-                element.column_alias()?.let { colCtx ->
-                    columns += colCtx.text
-                }
+            var asd = ctx.select_list_elements()
+
+            if (element.column_alias() != null) {
+                columns += element.column_alias().identifier().text
+            } else if (element.expression() != null) {
+                columns += element.expression().text
 
             }
         }

@@ -7,8 +7,9 @@ package com.github.frostycityman.inlinesqlcommentor.sql.provider
 
 class ColumnCommentProvider {
     private val columnComments = mapOf(
-        "emp_id" to "사원 고유 번호",
-        "emp_name" to "사원 이름"
+        "employee_id" to "직원 ID",
+        "employee_name" to "직원 이름",
+        "salary" to "급여"
     )
 
     fun getComment(column: String): String? = columnComments[column]
