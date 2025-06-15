@@ -11,6 +11,5 @@ class ColumnCommentProvider {
         "employee_name" to "직원 이름",
         "salary" to "급여"
     )
-
     fun getComment(column: String): String? = columnComments[column]
 }

@@ -24,8 +24,6 @@ class ColumnCommentVisitor : PlSqlParserBaseVisitor<Unit>() {
      */
     override fun visitSelected_list(ctx: PlSqlParser.Selected_listContext) {
         ctx.select_list_elements().forEach { element ->
-            var asd = ctx.select_list_elements()
-
             if (element.column_alias() != null) {
                 columns += element.column_alias().identifier().text
             } else if (element.expression() != null) {
