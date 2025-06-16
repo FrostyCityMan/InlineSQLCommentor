@@ -4,6 +4,7 @@ import ai.grazie.utils.text
 import com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlLexer
 import com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParserBaseVisitor
 import com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser
+import com.jetbrains.rd.util.string.println
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 
@@ -19,18 +20,25 @@ import org.antlr.v4.runtime.CommonTokenStream
 class ColumnCommentVisitor : PlSqlParserBaseVisitor<Unit>() {
     private val columns = mutableListOf<String>()
 
+
     /**
-     * SELECT 문(statement) 노드를 방문하여, select_list 안의 column_name과 general_element를 수집
+     * SELECT 문의 select_list 노드를 방문하여, 각 요소(expression)의 텍스트를 컬럼 리스트에 추가합니다.
+     * 별칭(alias)이 있는 경우 별칭을 사용하고, 별칭이 없으면 expression의 원본 텍스트를 사용합니다.
      */
     override fun visitSelected_list(ctx: PlSqlParser.Selected_listContext) {
+        var ctxText = ctx.select_list_elements(2).text
+        println("ctx = ${ctxText}")
         ctx.select_list_elements().forEach { element ->
+            // 컬럼에 별칭(alias)이 지정된 경우 별칭 이름을 추가
             if (element.column_alias() != null) {
                 columns += element.column_alias().identifier().text
-            } else if (element.expression() != null) {
+            }
+            // 별칭이 없는 일반 표현식은 원본 텍스트를 추가
+            else if (element.expression() != null) {
                 columns += element.expression().text
-
             }
         }
+        // 부모 클래스의 방문 메소드를 호출하여 추가 탐색을 진행
         super.visitSelected_list(ctx)
     }
 
