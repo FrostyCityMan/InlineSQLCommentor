@@ -26,10 +26,10 @@ class ColumnCommentVisitor : PlSqlParserBaseVisitor<Unit>() {
      * 별칭(alias)이 있는 경우 별칭을 사용하고, 별칭이 없으면 expression의 원본 텍스트를 사용합니다.
      */
     override fun visitSelected_list(ctx: PlSqlParser.Selected_listContext) {
-        var ctxText = ctx.select_list_elements(2).text
-        println("ctx = ${ctxText}")
         ctx.select_list_elements().forEach { element ->
             // 컬럼에 별칭(alias)이 지정된 경우 별칭 이름을 추가
+            var aliasCtx = element.column_alias()
+
             if (element.column_alias() != null) {
                 columns += element.column_alias().identifier().text
             }
@@ -37,16 +37,31 @@ class ColumnCommentVisitor : PlSqlParserBaseVisitor<Unit>() {
             else if (element.expression() != null) {
                 columns += element.expression().text
             }
-        }
+
+            val alias = aliasCtx?.identifier()?.text
+        } //end Select
         // 부모 클래스의 방문 메소드를 호출하여 추가 탐색을 진행
         super.visitSelected_list(ctx)
     }
 
     /**
+     * insert문 컬럼추출
+     */
+    override fun visitColumn_list(ctx: PlSqlParser.Column_listContext?) {
+      ctx?.column_name()?.forEach { element ->
+          columns += element.identifier().text
+
+        }
+
+        return super.visitColumn_list(ctx)
+    }
+    /**
      * 주어진 SQL을 파싱하여 컬럼명을 추출
      */
     fun parseColumns(sql: String): List<String> {
+        println("1 = ${1}")
         val lexer = PlSqlLexer(CharStreams.fromString(sql))
+        println("2 = ${2}")
         val tokens = CommonTokenStream(lexer)
         val parser = PlSqlParser(tokens)
         visit(parser.sql_script())

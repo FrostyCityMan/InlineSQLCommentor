@@ -9,7 +9,7 @@ class SqlCommentInjector(
 
     fun injectComments(sql: String): String {
         val visitor = ColumnCommentVisitor()
-        val columns = visitor.parseColumns(sql)
+        val columns = visitor.parseColumns(sql) //컬럼 추출
         var commentedSql = sql
 
         columns.forEach { col ->
