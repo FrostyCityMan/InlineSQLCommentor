@@ -1,44 +1,38 @@
 package com.github.frostycityman.inlinesqlcommentor.sql.provider
 
-import com.intellij.database.dataSource.DataSourceManager
 import com.intellij.database.dataSource.DatabaseConnectionConfig
-import com.intellij.database.psi.DataSourceManager
+import com.intellij.database.dataSource.LocalDataSource
+import com.intellij.database.dataSource.LocalDataSourceManager
+import com.intellij.database.model.DasDataSource
 import com.intellij.database.psi.DbTable
-import com.intellij.database.psi.DbTableColumn
+import com.intellij.database.psi.DbColumn // <<-- DbTableColumn이 아니라 DbColumn 입니다!
 import com.intellij.openapi.project.Project
 
-/**
- * IntelliJ에 등록된 Data Source의 캐시에 있는 연결 정보를 사용해
- * 컬럼 주석을 조회하는 Provider.
- */
 class IntelliJCacheColumnCommentProvider(
     private val project: Project,
     private val dataSourceName: String
 ) : ColumnCommentProvider {
-    private val config: DatabaseConnectionConfig? by lazy {
-        DataSourceManager.getInstance(project)
+
+    private val dataSource: DasDataSource? by lazy {
+        LocalDataSourceManager.getInstance(project)
             .dataSources
             .firstOrNull { it.name == dataSourceName }
-            ?.connectionConfig
+    }
+
+    private val config: DatabaseConnectionConfig? by lazy {
+        (dataSource as? LocalDataSource)?.connectionConfig
     }
 
     override fun getComment(tableName: String, columnName: String): String? {
-        // ConnectionConfig가 없는 경우 바로 null
-        config ?: return null
+        val currentDataSource = dataSource ?: return null
+        val tables: List<DbTable> = DbTable.find(project, currentDataSource, tableName)
+        val table = tables.firstOrNull() ?: return null
 
-        // IntelliJ Database API를 통해 테이블과 컬럼 메타 조회
-        val ds = DataSourceManager.getInstance(project)
-            .dataSources
-            .first { it.name == dataSourceName }
-
-        val tables = DbTable.find(project, ds, tableName)
-        if (tables.isEmpty()) return null
-
-        val column: DbTableColumn? = tables
-            .first()
-            .columns
+        // DbColumn으로 수정합니다.
+        val column: DbColumn? = table.columns // table.columns는 List<DbColumn>을 반환합니다.
             .firstOrNull { it.name.equals(columnName, ignoreCase = true) }
 
+        // DbColumn 인터페이스에는 comment 프로퍼티가 있습니다.
         return column?.comment
     }
 
