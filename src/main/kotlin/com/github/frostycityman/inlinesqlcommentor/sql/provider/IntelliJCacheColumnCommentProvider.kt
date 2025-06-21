@@ -1,6 +1,5 @@
 package com.github.frostycityman.inlinesqlcommentor.sql.provider
 
-import com.intellij.database.dataSource.DataSourceManager
 import com.intellij.database.dataSource.DatabaseConnectionConfig
 import com.intellij.database.psi.DataSourceManager
 import com.intellij.database.psi.DbTable
@@ -16,7 +15,7 @@ class IntelliJCacheColumnCommentProvider(
     private val dataSourceName: String
 ) : ColumnCommentProvider {
     private val config: DatabaseConnectionConfig? by lazy {
-        DataSourceManager.getInstance(project)
+        DataSourceManager.getManagers(project).
             .dataSources
             .firstOrNull { it.name == dataSourceName }
             ?.connectionConfig
