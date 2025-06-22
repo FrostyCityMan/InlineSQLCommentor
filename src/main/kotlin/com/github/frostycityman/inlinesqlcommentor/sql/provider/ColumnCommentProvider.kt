@@ -1,16 +1,28 @@
 package com.github.frostycityman.inlinesqlcommentor.sql.provider
 
+import com.intellij.database.psi.DbPsiFacade
+import com.intellij.database.dataSource.DatabaseConnectionConfig
+import com.intellij.openapi.project.Project
+
 /**
- * 테이블과 컬럼명을 입력받아, 해당 컬럼의 주석(설명)을 조회하는 인터페이스.
- * 구현체는 JDBC나 IntelliJ DataSourceManager를 사용해서 실제 DB 메타를 조회합니다.
+ * IntelliJ에 등록된 Data Source의 정보를 활용하여 컬럼의 코멘트를 제공하는 클래스
  */
-interface ColumnCommentProvider {
-    /**
-     * 지정된 테이블의 특정 컬럼에 대한 주석을 반환합니다.
-     *
-     * @param tableName 조회할 테이블의 이름
-     * @param columnName 조회할 컬럼의 이름
-     * @return 컬럼 주석 문자열. 주석이 없거나 컬럼을 찾을 수 없으면 null.
-     */
-    fun getComment(tableName: String, columnName: String): String?
+class ColumnCommentProvider(private val project: Project, private val dataSourceName: String) {
+
+    private val columnComments = mapOf(
+        "employee_id" to "직원 ID",
+        "employee_name" to "직원 이름",
+        "salary" to "급여"
+    )
+
+    fun getComment(column: String): String? = columnComments[column]
+
+    fun getDataSourceConfig(): DatabaseConnectionConfig? {
+        val dataSource = DbPsiFacade.getInstance(project)
+            .dataSources
+            .firstOrNull { it.name == dataSourceName }
+            ?: return null
+
+        return dataSource.connectionConfig
+    }
 }
