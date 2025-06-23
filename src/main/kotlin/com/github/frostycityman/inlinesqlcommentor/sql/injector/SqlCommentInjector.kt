@@ -13,7 +13,7 @@ class SqlCommentInjector(
         var commentedSql = sql
 
         columns.forEach { col ->
-            commentProvider.getComment(col)?.let { comment ->
+            commentProvider.getComment(col, "TEST")?.let { comment ->
                 commentedSql = commentedSql.replace(col, "$col /* $comment */")
             }
         }
