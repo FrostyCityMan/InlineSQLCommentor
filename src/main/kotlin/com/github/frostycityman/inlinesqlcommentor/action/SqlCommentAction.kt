@@ -145,7 +145,7 @@ class SqlCommentAction : AnAction("Insert Column Comments") {
         file: VirtualFile,
         project: Project
     ): Boolean {
-        val associatedDataSources = DbSqlUtil.getDataSources(project)
+        val associatedDataSources = DbUtil.getDataSources(project)
         return associatedDataSources.any { localDs ->
             val dasDataSource = localDs?.delegate as? DasDataSource
             val targetDasDataSource = dbDataSource.delegate as? DasDataSource
