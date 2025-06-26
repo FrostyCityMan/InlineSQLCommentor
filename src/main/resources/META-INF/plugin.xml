@@ -10,7 +10,7 @@
 	
 	<extensions defaultExtensionNs="com.intellij">
 		<!--		<toolWindow factoryClass="com.github.frostycityman.inlinesqlcommentor.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>-->
-<!--		<postStartupActivity implementation="com.github.frostycityman.inlinesqlcommentor.startup.MyProjectActivity"/>-->
+		<!--		<postStartupActivity implementation="com.github.frostycityman.inlinesqlcommentor.startup.MyProjectActivity"/>-->
 	</extensions>
 	<depends>com.intellij.database</depends>
 	
