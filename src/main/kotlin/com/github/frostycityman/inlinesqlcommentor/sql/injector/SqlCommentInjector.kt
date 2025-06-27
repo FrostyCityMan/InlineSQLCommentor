@@ -2,6 +2,7 @@ package com.github.frostycityman.inlinesqlcommentor.sql.injector
 
 import com.github.frostycityman.inlinesqlcommentor.sql.parser.ColumnCommentVisitor
 import com.github.frostycityman.inlinesqlcommentor.sql.provider.ColumnCommentProvider
+import com.intellij.database.dialects.cassandra.model.defaults.CassTableDefaults.comment
 
 class SqlCommentInjector(
     private val commentProvider: ColumnCommentProvider
@@ -13,7 +14,7 @@ class SqlCommentInjector(
         var commentedSql = sql
 
         columns.forEach { col ->
-            commentProvider.getComment(col, "TEST")?.let { comment ->
+            commentProvider.getComment("TEST_TABLE", col)?.let { comment ->
                 commentedSql = commentedSql.replace(col, "$col /* $comment */")
             }
         }
