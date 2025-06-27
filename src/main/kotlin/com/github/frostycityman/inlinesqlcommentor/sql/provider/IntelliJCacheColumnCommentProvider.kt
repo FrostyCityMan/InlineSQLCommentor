@@ -1,11 +1,13 @@
 import com.github.frostycityman.inlinesqlcommentor.sql.provider.ColumnCommentProvider
 import com.intellij.database.model.DasColumn
+import com.intellij.database.model.DasDataSource
 import com.intellij.database.model.DasNamespace
 import com.intellij.database.model.DasTable
 import com.intellij.database.model.ObjectKind
 import com.intellij.database.model.RawConnectionConfig
 import com.intellij.database.psi.DbDataSource
 import com.intellij.database.psi.DbPsiFacade
+import com.intellij.database.util.DbUtil
 import com.intellij.openapi.project.Project
 
 /**
@@ -38,6 +40,7 @@ class IntelliJCacheColumnCommentProvider(
      */
     override fun getComment(tableNameInput: String, columnName: String): String? {
         // 데이터 소스를 찾을 수 없으면 null 반환
+        //TODO data소스에서 table찾기
         val dataSource = dbDataSource ?: run {
             // LOG.warn("Data source '$dataSourceName' not found for getComment.")
             return null
@@ -80,6 +83,7 @@ class IntelliJCacheColumnCommentProvider(
      */
     private fun findTableInDataSource(dataSource: DbDataSource, tableNameInput: String): DasTable? {
         // 데이터 소스 내의 모든 테이블 객체를 가져옴
+        //TODO 테이블 리스트 가져오는법
         val tables: List<DasTable> = dataSource.getDasChildren(ObjectKind.TABLE)
             .filterIsInstance<DasTable>()
 
