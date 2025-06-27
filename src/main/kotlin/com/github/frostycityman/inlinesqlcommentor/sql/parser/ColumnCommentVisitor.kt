@@ -26,6 +26,7 @@ class ColumnCommentVisitor : PlSqlParserBaseVisitor<Unit>() {
      * 별칭(alias)이 있는 경우 별칭을 사용하고, 별칭이 없으면 expression의 원본 텍스트를 사용합니다.
      */
     override fun visitSelected_list(ctx: PlSqlParser.Selected_listContext) {
+
         ctx.select_list_elements().forEach { element ->
             // 컬럼에 별칭(alias)이 지정된 경우 별칭 이름을 추가
             var aliasCtx = element.column_alias()
@@ -48,13 +49,14 @@ class ColumnCommentVisitor : PlSqlParserBaseVisitor<Unit>() {
      * insert문 컬럼추출
      */
     override fun visitColumn_list(ctx: PlSqlParser.Column_listContext?) {
-      ctx?.column_name()?.forEach { element ->
-          columns += element.identifier().text
+        ctx?.column_name()?.forEach { element ->
+            columns += element.identifier().text
 
         }
 
         return super.visitColumn_list(ctx)
     }
+
     /**
      * 주어진 SQL을 파싱하여 컬럼명을 추출
      */
