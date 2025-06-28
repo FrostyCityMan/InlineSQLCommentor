@@ -1,6 +1,7 @@
 package com.github.frostycityman.inlinesqlcommentor.sql.provider
 
 import com.intellij.database.model.RawConnectionConfig
+
 // import com.intellij.openapi.diagnostic.Logger // 로깅이 필요한 경우 주석 해제
 
 /**
