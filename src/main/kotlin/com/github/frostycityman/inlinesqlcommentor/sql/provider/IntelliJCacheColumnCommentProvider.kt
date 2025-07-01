@@ -7,7 +7,6 @@ import com.intellij.database.model.ObjectKind
 import com.intellij.database.model.RawConnectionConfig
 import com.intellij.database.psi.DbDataSource
 import com.intellij.database.psi.DbPsiFacade
-import com.intellij.database.util.DbUtil
 import com.intellij.openapi.project.Project
 
 /**
@@ -21,7 +20,6 @@ class IntelliJCacheColumnCommentProvider(
     private val project: Project,
     private val dataSourceName: String
 ) : ColumnCommentProvider {
-
     // 로깅 인스턴스 (필요시 주석 해제하여 사용)
     // private val LOG = Logger.getInstance(IntelliJCacheColumnCommentProvider::class.java)
 
@@ -39,88 +37,93 @@ class IntelliJCacheColumnCommentProvider(
      * 지정된 테이블과 컬럼 이름에 해당하는 코멘트를 IntelliJ 데이터베이스 캐시에서 조회하여 반환합니다.
      */
     override fun getComment(tableNameInput: String, columnName: String): String? {
-        // 데이터 소스를 찾을 수 없으면 null 반환
-        //TODO data소스에서 table찾기
         val dataSource = dbDataSource ?: run {
             // LOG.warn("Data source '$dataSourceName' not found for getComment.")
             return null
         }
 
-        // 데이터 소스 내에서 테이블 검색
+        // 데이터 소스 내에서 테이블 검색 (개선된 메소드 호출)
         val dasTable: DasTable? = findTableInDataSource(dataSource, tableNameInput)
 
-        // 테이블을 찾을 수 없으면 null 반환
         if (dasTable == null) {
             // LOG.warn("Table not found with input: '$tableNameInput' in dataSource '${dataSource.name}'.")
             return null
         }
 
-        // 찾은 테이블 내에서 컬럼 검색
-        // DasTable의 자식 요소 중 ObjectKind.COLUMN 타입만 필터링하고 DasColumn으로 캐스팅
         val columns: List<DasColumn> = dasTable.getDasChildren(ObjectKind.COLUMN)
             .filterIsInstance<DasColumn>()
 
-        // 컬럼 이름으로 대상 컬럼 검색 (대소문자 무시)
         val dasColumn = columns.firstOrNull { it.name.equals(columnName, ignoreCase = true) }
 
-        // 컬럼을 찾을 수 없으면 null 반환, 찾았으면 해당 컬럼의 코멘트 반환
         return dasColumn?.comment.also {
-            // if (it == null && dasColumn != null) {
-            //    LOG.info("Column '$columnName' in table '${dasTable.name}' found, but has no comment.")
-            // } else if (dasColumn == null) {
-            //    LOG.warn("Column '$columnName' not found in table '${dasTable.name}'")
-            // }
+             if (it == null && dasColumn != null) {
+                 println("Column '$columnName' in table '${dasTable.name}' found, but has no comment.")
+             } else if (dasColumn == null) {
+                 println("Column '$columnName' not found in table '${dasTable.name}'")
+             }
         }
     }
 
     /**
-     * 지정된 데이터 소스 내에서 테이블 이름으로 [DasTable] 객체를 검색합니다.
-     * 스키마 포함 여부 등 다양한 테이블 이름 형식을 고려하여 검색을 시도합니다.
+     * 지정된 데이터 소스 내에서 테이블 이름으로 [DasTable] 객체를 검색합니다. (로직 개선됨)
+     * 사용자가 입력한 테이블 이름(단순 이름, '스키마.테이블' 형식 모두)을 고려하여 일치하는 테이블을 찾습니다.
      *
      * @param dataSource 검색 대상 [DbDataSource].
      * @param tableNameInput 사용자가 입력한 테이블 이름 (예: "my_table", "public.my_table").
      * @return 찾아낸 [DasTable] 객체. 찾지 못한 경우 null을 반환합니다.
      */
+      /**
+     * [디버깅 강화 버전]
+     * 지정된 데이터 소스 내에서 테이블 이름으로 [DasTable] 객체를 검색합니다.
+     * 함수 진입 시 입력값과 캐시에 있는 모든 테이블 정보를 출력하여 원인 파악을 돕습니다.
+     */
     private fun findTableInDataSource(dataSource: DbDataSource, tableNameInput: String): DasTable? {
+        println("--- [Debug] findTableInDataSource ---")
+        println(">> 입력된 tableNameInput: '$tableNameInput'")
+
         // 데이터 소스 내의 모든 테이블 객체를 가져옴
-        //TODO 테이블 리스트 가져오는법
-        val tables: List<DasTable> = dataSource.getDasChildren(ObjectKind.TABLE)
+        val allTables: List<DasTable> = dataSource.getDasChildren(ObjectKind.TABLE)
             .filterIsInstance<DasTable>()
 
-        // 1단계: 입력된 이름(tableNameInput)과 테이블의 다양한 이름 표현(단순 이름, FQN 추정)을 비교
-        var foundTable = tables.firstOrNull { table ->
-            val qualifiedNameAttempt = table.toString() // toString()은 종종 FQN(Fully Qualified Name)을 반환
-            val simpleName = table.name // name 프로퍼티는 보통 순수 객체 이름을 반환
-
-            // 대소문자를 무시하고 비교
-            qualifiedNameAttempt.equals(tableNameInput, ignoreCase = true) ||
-                    simpleName.equals(tableNameInput, ignoreCase = true)
+        if (allTables.isEmpty()) {
+            println("!! 경고: 데이터 소스 '${dataSource.name}'에서 테이블을 전혀 찾을 수 없습니다. 캐시를 확인하세요.")
+            return null
         }
 
-        // 1단계에서 찾았으면 바로 반환
-        if (foundTable != null) {
-            return foundTable
+        println(">> 데이터 소스 '${dataSource.name}'에 캐시된 테이블 목록:")
+        allTables.forEach { table ->
+            val schemaName = (table.dasParent as? DasNamespace)?.name ?: "[스키마 없음]"
+            println("  - 스키마: $schemaName, 테이블 이름: ${table.name}")
         }
+        println("------------------------------------")
 
-        // 2단계: 1단계에서 못 찾았고, 입력된 이름에 '.' (스키마 구분자)가 포함된 경우
-        //        스키마 이름과 순수 테이블 이름으로 분리하여 정확히 일치하는 테이블을 검색
-        if (tableNameInput.contains(".")) {
-            val parts = tableNameInput.split('.', limit = 2)
-            if (parts.size == 2) { // "스키마.테이블" 형식으로 정상 분리된 경우
-                val schemaNameInput = parts[0]
-                val pureTableNameInput = parts[1]
 
-                foundTable = tables.firstOrNull { table ->
-                    // 테이블의 부모 네임스페이스(스키마) 이름 가져오기
-                    val tableSchemaName = (table.dasParent as? DasNamespace)?.name
-                    // 스키마 이름과 테이블 이름이 모두 일치하는지 확인 (대소문자 무시)
-                    tableSchemaName != null && tableSchemaName.equals(schemaNameInput, ignoreCase = true) &&
-                            table.name.equals(pureTableNameInput, ignoreCase = true) // table.name이 순수 테이블명이라고 가정
-                }
+        val cleanTableNameInput = tableNameInput.removeSurrounding("`").removeSurrounding("\"").removeSurrounding("'")
+
+        // 1. 정규화된 이름(스키마.테이블)으로 먼저 정확하게 찾아봅니다.
+        if (cleanTableNameInput.contains('.')) {
+            val foundByQualifiedName = allTables.firstOrNull { table ->
+                val schemaName = (table.dasParent as? DasNamespace)?.name
+                val qualifiedName = if (schemaName != null) "$schemaName.${table.name}" else table.name
+                qualifiedName.equals(cleanTableNameInput, ignoreCase = true)
+            }
+            if (foundByQualifiedName != null) {
+                println(">> [성공] 정규화된 이름으로 테이블 '${foundByQualifiedName.name}' 찾음.")
+                return foundByQualifiedName
             }
         }
-        // 최종적으로 찾은 테이블 (또는 null) 반환
-        return foundTable
+
+        // 2. 단순 이름으로 찾습니다.
+        val foundBySimpleName = allTables.firstOrNull { table ->
+            table.name.equals(cleanTableNameInput, ignoreCase = true)
+        }
+        if (foundBySimpleName != null) {
+            println(">> [성공] 단순 이름으로 테이블 '${foundBySimpleName.name}' 찾음.")
+            return foundBySimpleName
+        }
+
+        println("!! [실패] 입력된 이름 '$tableNameInput'과 일치하는 테이블을 찾지 못했습니다.")
+        return null
     }
 
     /**
@@ -128,9 +131,6 @@ class IntelliJCacheColumnCommentProvider(
      * 현재 [dbDataSource]의 원시 연결 설정([RawConnectionConfig])을 반환합니다.
      */
     override fun getDataSourceConfig(): RawConnectionConfig? {
-        // 데이터 소스를 찾을 수 없으면 null 반환
-        val dataSource = dbDataSource ?: return null
-        // DbDataSource.connectionConfig는 RawConnectionConfig? 타입을 반환
-        return dataSource.connectionConfig
+        return dbDataSource?.connectionConfig
     }
 }
