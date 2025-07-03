@@ -7,6 +7,27 @@ import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 
 /**
+ * 파싱된 컬럼의 상세 정보를 담는 클래스
+ * @property columnName 컬럼의 이름 (예: "user_name")
+ * @property tableName 컬럼이 속한 테이블의 이름 또는 에일리어스 (예: "users", "u")
+ */
+data class ColumnInfos(
+    val columnName: String,
+    val tableName: String?
+)
+
+/**
+ * 파싱된 테이블의 상세 정보를 담는 클래스
+ * @property tableName 실제 테이블 이름 (예: "users")
+ * @property alias 테이블의 에일리어스(별칭) (예: "u"). 에일리어스가 없으면 null.
+ */
+data class TableInfos(
+    val tableName: String,
+    val alias: String?
+)
+
+
+/**
  * Oracle PL/SQL 쿼리의 SELECT 또는 INSERT 문으로부터 컬럼명을 추출하는 방문자(Visitor) 클래스입니다.
  *
  * ANTLR을 사용하여 파싱된 SQL 구문 트리를 순회하며,
@@ -32,6 +53,9 @@ class ColumnCommentVisitor : PlSqlParserBaseVisitor<Unit>() {
      */
     override fun visitSelected_list(ctx: PlSqlParser.Selected_listContext) {
         ctx.select_list_elements().forEach { element ->
+            //Table 별칭이 명시되어 있는 경우
+                var asd = element.expression().text
+                println("asd = ${asd}")
             // 별칭(alias)이 명시된 경우 해당 이름을 저장
             if (element.column_alias() != null) {
                 columns += element.column_alias().identifier().text
