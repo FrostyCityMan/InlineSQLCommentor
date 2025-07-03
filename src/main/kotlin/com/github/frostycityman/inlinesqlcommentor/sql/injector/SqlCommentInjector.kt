@@ -3,7 +3,6 @@ package com.github.frostycityman.inlinesqlcommentor.sql.injector
 import com.github.frostycityman.inlinesqlcommentor.sql.parser.ColumnCommentVisitor
 import com.github.frostycityman.inlinesqlcommentor.sql.parser.TableNameVisitor
 import com.github.frostycityman.inlinesqlcommentor.sql.provider.ColumnCommentProvider
-import com.tylerthrailkill.helpers.prettyprint.get
 
 /**
  * SQL 문자열 내 컬럼에 주석을 자동 삽입해주는 인젝터 클래스입니다.
@@ -52,7 +51,7 @@ class SqlCommentInjector(
         // 각 컬럼에 대해 주석을 조회한 뒤 해당 위치에 주석 삽입
         columns.forEach { col ->
             // 주석 제공자에서 해당 컬럼의 주석을 조회
-            commentProvider.getComment(tableNames.get(0), col)?.let { comment ->
+            commentProvider.getColumnComment(tableNames.get(0), col)?.let { comment ->
                 // SQL 문자열 내의 컬럼명을 주석 포함 문자열로 대체
                 commentedSql = commentedSql.replace(col, "$col /* $comment */")
             }
