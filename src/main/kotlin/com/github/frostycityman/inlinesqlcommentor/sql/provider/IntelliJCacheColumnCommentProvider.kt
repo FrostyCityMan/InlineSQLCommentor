@@ -9,7 +9,6 @@ import com.intellij.database.psi.DbPsiFacade
 import com.intellij.database.util.DasUtil
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.diagnostic.Logger
 
 /**
  * IntelliJ Data Source의 내부 캐시를 활용하여 컬럼 코멘트를 제공하는 [ColumnCommentProvider] 구현체입니다.
@@ -44,7 +43,7 @@ class IntelliJCacheColumnCommentProvider(
     /**
      * 지정된 테이블과 컬럼에 대한 코멘트를 조회합니다.
      *
-     * 이 메소드는 [ColumnCommentProvider.getComment] 인터페이스의 구현부로, 전체 조회 과정을 조율합니다.
+     * 이 메소드는 [ColumnCommentProvider.getColumnComment] 인터페이스의 구현부로, 전체 조회 과정을 조율합니다.
      * 1. 데이터 소스를 찾습니다.
      * 2. `findTableInDataSource` 헬퍼 메소드를 호출하여 테이블 객체를 찾습니다.
      * 3. 테이블 객체에서 컬럼 목록을 가져와 일치하는 컬럼을 찾습니다.
@@ -54,7 +53,7 @@ class IntelliJCacheColumnCommentProvider(
      * @param columnName 코멘트를 찾을 컬럼의 이름.
      * @return 조회된 컬럼 코멘트 문자열. 테이블, 컬럼, 또는 코멘트 자체를 찾지 못한 경우 `null`을 반환합니다.
      */
-    override fun getComment(tableNameInput: String, columnName: String): String? {
+    override fun getColumnComment(tableNameInput: String, columnName: String): String? {
         val dataSource = dbDataSource ?: run {
             // LOG.warn("Data source '$dataSourceName' not found for getComment.")
             return null
@@ -157,5 +156,26 @@ class IntelliJCacheColumnCommentProvider(
      */
     override fun getDataSourceConfig(): RawConnectionConfig? {
         return dbDataSource?.connectionConfig
+    }
+
+    override fun getTableComment(tableName: String): String? {
+       val dataSource = dbDataSource ?: run {
+            // LOG.warn("Data source '$dataSourceName' not found for getComment.")
+            return null
+        }
+
+        val dasTable: DasTable? = findTableInDataSource(dataSource, tableName)
+
+        if (dasTable == null) {
+            // LOG.warn("Table not found with input: '$tableNameInput' in dataSource '${dataSource.name}'.")
+            return null
+        }
+
+
+        return dasTable.comment.also { comment ->
+            if (comment == null) {
+                println(">> Column '' in table '${dasTable.name}' found, but has no comment.")
+            }
+        }
     }
 }
