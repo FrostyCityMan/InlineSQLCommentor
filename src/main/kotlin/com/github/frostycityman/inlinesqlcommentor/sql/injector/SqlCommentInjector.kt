@@ -33,30 +33,34 @@ class SqlCommentInjector(
      * @param sql 주석을 삽입할 대상 SQL 문자열
      * @return 컬럼 주석이 삽입된 SQL 문자열
      */
-    fun injectComments(sql: String): String {
-        val commentVisitor = ColumnCommentVisitor()
-        val tableNameVisitor = TableNameVisitor()
-        // SQL 내의 모든 컬럼명을 파싱하여 리스트로 추출
-        val columns = commentVisitor.parseColumns(sql)
+   fun injectComments(sql: String): String {
+    val commentVisitor = ColumnCommentVisitor()
+    val tableNameVisitor = TableNameVisitor()
 
-        val tableNames = mutableListOf<String>() // 결과를 담을 빈 리스트 생성
+    val columns = commentVisitor.parseColumns(sql)
+    val tables = tableNameVisitor.parseTableNames(sql)
 
-        val tables = tableNameVisitor.parseTableNames(sql)
-        for (tableInfo in tables) {
-            tableNames.add(tableInfo.tableName) // 각 객체의 tableName을 리스트에 추가
-        }
+    val commentedSqlBuilder = StringBuilder(sql)
 
-        var commentedSql = sql
+    // 테이블별 별칭(alias)을 실제 테이블명과 매핑
+    val tableAliasMapping = tables.associate { (it.alias ?: it.tableName) to it.tableName }
 
-        // 각 컬럼에 대해 주석을 조회한 뒤 해당 위치에 주석 삽입
-        columns.forEach { col ->
-            // 주석 제공자에서 해당 컬럼의 주석을 조회
-            commentProvider.getColumnComment(tableNames.get(0), col)?.let { comment ->
-                // SQL 문자열 내의 컬럼명을 주석 포함 문자열로 대체
-                commentedSql = commentedSql.replace(col, "$col /* $comment */")
+    // 컬럼 주석 삽입
+    columns.forEach { col ->
+        val colTableAlias = col.tableAlias ?: return@forEach
+        val actualTableName = tableAliasMapping[colTableAlias] ?: return@forEach
+
+        commentProvider.getColumnComment(actualTableName, col.name)?.let { comment ->
+            // 여기에 정확한 위치를 찾는 AST 기반 삽입 로직을 사용해야 합니다.
+            // 예시 (실제 구현은 AST로부터 얻은 위치 사용):
+            val regex = "\\b${Regex.escape(col.name)}\\b".toRegex()
+            commentedSqlBuilder.replace(regex) { matchResult ->
+                "${matchResult.value} /* $comment */"
             }
         }
-
-        return commentedSql
     }
+
+    return commentedSqlBuilder.toString()
+}
+
 }

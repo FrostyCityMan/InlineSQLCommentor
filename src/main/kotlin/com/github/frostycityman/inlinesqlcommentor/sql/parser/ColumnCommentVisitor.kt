@@ -16,6 +16,11 @@ data class ColumnInfos(
     val tableName: String?
 )
 
+data class ColumnInfo(
+    val name: String,           // 컬럼명
+    val tableAlias: String?     // 테이블 별칭 (없다면 null)
+)
+
 /**
  * 파싱된 테이블의 상세 정보를 담는 클래스
  * @property tableName 실제 테이블 이름 (예: "users")
@@ -54,8 +59,8 @@ class ColumnCommentVisitor : PlSqlParserBaseVisitor<Unit>() {
     override fun visitSelected_list(ctx: PlSqlParser.Selected_listContext) {
         ctx.select_list_elements().forEach { element ->
             //Table 별칭이 명시되어 있는 경우
-                var asd = element.expression().text
-                println("asd = ${asd}")
+            var asd = element.expression().text
+            println("asd = ${asd}")
             // 별칭(alias)이 명시된 경우 해당 이름을 저장
             if (element.column_alias() != null) {
                 columns += element.column_alias().identifier().text
@@ -103,10 +108,10 @@ class ColumnCommentVisitor : PlSqlParserBaseVisitor<Unit>() {
         return columns.toList()
     }
 
-    /**
-     * 디버깅 또는 독립 실행 테스트용 main 함수
-     */
-    fun main() {
-        println("Hello, Kotlin!")
+    override fun visitSelected_element(ctx: PlSqlParser.Selected_elementContext) {
+        val columnName = ctx.expression()?.text ?: return
+        val tableAlias = ctx.tableview_name()?.text // 테이블 별칭 찾는 방식은 문법에 따라 다름
+
+        columns.add(ColumnInfo(name = columnName, tableAlias = tableAlias))
     }
 }
