@@ -70,7 +70,7 @@ class ColumnCommentVisitor : PlSqlParserBaseVisitor<Unit>() {
                 columns += element.expression().text
             }
         }
-
+//  columns.add(ColumnInfo(name = columnName, tableAlias = tableAlias))
         // 하위 노드 탐색을 위해 부모 클래스의 visit 호출
         super.visitSelected_list(ctx)
     }
@@ -108,10 +108,5 @@ class ColumnCommentVisitor : PlSqlParserBaseVisitor<Unit>() {
         return columns.toList()
     }
 
-    override fun visitSelected_element(ctx: PlSqlParser.Selected_elementContext) {
-        val columnName = ctx.expression()?.text ?: return
-        val tableAlias = ctx.tableview_name()?.text // 테이블 별칭 찾는 방식은 문법에 따라 다름
 
-        columns.add(ColumnInfo(name = columnName, tableAlias = tableAlias))
-    }
 }
