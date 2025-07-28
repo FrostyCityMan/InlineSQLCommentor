@@ -60,7 +60,7 @@ tasks.generateGrammarSource {
         "-listener",
         "-package", "com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle"
     )
-   outputDirectory = file("src/main/gen/com/github/frostycityman/inlinesqlcommentor/sql/parser/generated/oracle")
+    outputDirectory = file("src/main/gen/com/github/frostycityman/inlinesqlcommentor/sql/parser/generated/oracle")
 }
 
 sourceSets {
@@ -160,12 +160,17 @@ kover {
 }
 
 tasks {
+
     wrapper {
         gradleVersion = providers.gradleProperty("gradleVersion").get()
     }
 
     publishPlugin {
         dependsOn(patchChangelog)
+    }
+
+    buildSearchableOptions {
+        jvmArgs("-Duser.language=en", "-Duser.country=US")
     }
 }
 
