@@ -47,13 +47,20 @@ class SqlCommentInjector(
         }
 
         var commentedSql = sql
-
-        // 각 컬럼에 대해 주석을 조회한 뒤 해당 위치에 주석 삽입
+    // 각 컬럼에 대해 주석을 조회한 뒤 해당 위치에 주석 삽입
         columns.forEach { col ->
-            // 주석 제공자에서 해당 컬럼의 주석을 조회
-            commentProvider.getColumnComment(tableNames.get(0), col)?.let { comment ->
-                // SQL 문자열 내의 컬럼명을 주석 포함 문자열로 대체
-                commentedSql = commentedSql.replace(col, "$col /* $comment */")
+            // 모든 테이블 이름을 순회
+            for (tableName in tableNames) {
+                // 주석 제공자에서 해당 컬럼의 주석을 조회
+                commentProvider.getColumnComment(tableName, col)?.let { comment ->
+                    // SQL 문자열 내의 컬럼명을 주석 포함 문자열로 대체
+                    // 정규 표현식을 사용하여 단어 단위로 정확하게 일치하는 컬럼명만 변경 (예: 'id'가 'user_id'의 일부로 변경되는 것 방지)
+                    val regex = "\\b${Regex.escape(col)}\\b".toRegex()
+                    commentedSql = regex.replace(commentedSql, "$col /* $comment */")
+
+                    // 일단 주석을 찾으면 해당 컬럼에 대한 검색을 중단하고 다음 컬럼으로 넘어감
+                    return@forEach
+                }
             }
         }
 
