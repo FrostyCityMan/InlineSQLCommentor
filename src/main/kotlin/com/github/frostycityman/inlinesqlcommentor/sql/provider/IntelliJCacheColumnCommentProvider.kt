@@ -9,6 +9,7 @@ import com.intellij.database.psi.DbPsiFacade
 import com.intellij.database.util.DasUtil
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.project.Project
+import java.util.Locale
 
 /**
  * IntelliJ Data Source의 내부 캐시를 활용하여 컬럼 코멘트를 제공하는 [ColumnCommentProvider] 구현체입니다.
@@ -101,9 +102,14 @@ class IntelliJCacheColumnCommentProvider(
         return ReadAction.compute<DasTable?, Throwable> {
             println("--- [Debug] findTableInDataSource (using DasUtil in ReadAction) ---")
             println(">> 입력된 tableNameInput: '$tableNameInput'")
-
-            val allTables: List<DasTable> = DasUtil.getTables(dataSource).toList()
-
+   val excludedSchemas = setOf("SYS", "SYSTEM")
+//            val allTables: List<DasTable> = DasUtil.getTables(dataSource).toList()
+        // 모든 테이블을 가져온 후 'SYS' 스키마를 제외하고 필터링합니다.
+        val allTables: List<DasTable> = DasUtil.getTables(dataSource).filterNot { table ->
+            val schemaName = (table.dasParent as? DasNamespace)?.name
+            // 스키마 이름이 null이 아니고, 대문자로 변경했을 때 제외 목록에 포함되는지 확인
+            schemaName != null && excludedSchemas.contains(schemaName.uppercase(Locale.getDefault()))
+        }
             if (allTables.isEmpty()) {
                 println("!! 경고: DasUtil.getTables()를 통해서도 데이터 소스 '${dataSource.name}'에서 테이블을 찾을 수 없습니다.")
                 println("!! >> 해결 방법: [Database] 도구 창에서 '${dataSource.name}'을(를) 'Forget Cached Schemas' 후 'Synchronize' 해보세요.")

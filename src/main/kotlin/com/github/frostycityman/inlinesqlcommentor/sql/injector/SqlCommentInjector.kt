@@ -1,8 +1,13 @@
 package com.github.frostycityman.inlinesqlcommentor.sql.injector
 
 import com.github.frostycityman.inlinesqlcommentor.sql.parser.ColumnCommentVisitor
+import com.github.frostycityman.inlinesqlcommentor.sql.parser.CommentInsertionInfo
+import com.github.frostycityman.inlinesqlcommentor.sql.parser.TableInfo
 import com.github.frostycityman.inlinesqlcommentor.sql.parser.TableNameVisitor
 import com.github.frostycityman.inlinesqlcommentor.sql.provider.ColumnCommentProvider
+import kotlin.collections.associate
+
+import kotlin.collections.sortByDescending
 
 /**
  * SQL 문자열 내 컬럼에 주석을 자동 삽입해주는 인젝터 클래스입니다.
@@ -34,36 +39,52 @@ class SqlCommentInjector(
      * @return 컬럼 주석이 삽입된 SQL 문자열
      */
     fun injectComments(sql: String): String {
-        val commentVisitor = ColumnCommentVisitor()
+        // --- 1. 정보 수집 단계 ---
+        // 각 Visitor는 이제 구조화된 정보 객체 리스트를 반환합니다.
+        val columnVisitor = ColumnCommentVisitor()       // parseColumns가 List<CommentInsertionInfo>를 반환한다고 가정
         val tableNameVisitor = TableNameVisitor()
-        // SQL 내의 모든 컬럼명을 파싱하여 리스트로 추출
-        val columns = commentVisitor.parseColumns(sql)
 
-        val tableNames = mutableListOf<String>() // 결과를 담을 빈 리스트 생성
+        val tableInfos: Set<TableInfo> = tableNameVisitor.parseTableNames(sql)
+        val columnInfos: MutableList<CommentInsertionInfo> = columnVisitor.parseColumns(sql).toMutableList()
 
-        val tables = tableNameVisitor.parseTableNames(sql)
-        for (tableInfo in tables) {
-            tableNames.add(tableInfo.tableName) // 각 객체의 tableName을 리스트에 추가
+        if (columnInfos.isEmpty()) {
+            return sql // 처리할 컬럼이 없으면 즉시 반환
         }
 
-        var commentedSql = sql
-    // 각 컬럼에 대해 주석을 조회한 뒤 해당 위치에 주석 삽입
-        columns.forEach { col ->
-            // 모든 테이블 이름을 순회
-            for (tableName in tableNames) {
-                // 주석 제공자에서 해당 컬럼의 주석을 조회
-                commentProvider.getColumnComment(tableName, col)?.let { comment ->
-                    // SQL 문자열 내의 컬럼명을 주석 포함 문자열로 대체
-                    // 정규 표현식을 사용하여 단어 단위로 정확하게 일치하는 컬럼명만 변경 (예: 'id'가 'user_id'의 일부로 변경되는 것 방지)
-                    val regex = "\\b${Regex.escape(col)}\\b".toRegex()
-                    commentedSql = regex.replace(commentedSql, "$col /* $comment */")
+        // --- 2. 정보 가공 단계 ---
+        // TableInfo 리스트를 사용하여 '별칭 -> 실제 테이블 이름' 조회 맵을 생성합니다.
+        // 이것이 이 로직의 가장 핵심적인 개선점입니다.
+        val aliasToRealNameMap = tableInfos.associate { info ->
+            // 별칭이 있으면 (별칭 -> 테이블명), 없으면 (테이블명 -> 테이블명)으로 매핑
+            (info.alias ?: info.tableName) to info.tableName
+        }
 
-                    // 일단 주석을 찾으면 해당 컬럼에 대한 검색을 중단하고 다음 컬럼으로 넘어감
-                    return@forEach
+        // --- 3. 코멘트 삽입 단계 ---
+        val commentedSqlBuilder = StringBuilder(sql)
+
+        // 인덱스가 꼬이지 않도록 뒤에서부터 수정
+        columnInfos.sortByDescending { it.insertionIndex }
+
+        columnInfos.forEach { colInfo ->
+            // colInfo의 테이블 별칭을 사용해 실제 테이블 이름을 맵에서 찾습니다.
+            val realTableName = if (colInfo.tableAlias != null) {
+                aliasToRealNameMap[colInfo.tableAlias]
+            } else if (aliasToRealNameMap.size == 1) {
+                // SELECT ID FROM USERS 같은 단일 테이블, 별칭 없는 쿼리 지원
+                aliasToRealNameMap.values.first()
+            } else {
+                null // 테이블을 특정할 수 없는 경우
+            }
+
+            if (realTableName != null) {
+                // 정확하게 찾아낸 실제 테이블 이름으로 코멘트를 조회합니다.
+                val comment = commentProvider.getColumnComment(realTableName, colInfo.columnName)
+                comment?.let {
+                    commentedSqlBuilder.insert(colInfo.insertionIndex + 1, " /* $it */")
                 }
             }
         }
 
-        return commentedSql
+        return commentedSqlBuilder.toString()
     }
 }
