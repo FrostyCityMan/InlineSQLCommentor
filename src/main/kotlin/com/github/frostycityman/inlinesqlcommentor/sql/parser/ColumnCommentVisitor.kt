@@ -3,7 +3,6 @@ package com.github.frostycityman.inlinesqlcommentor.sql.parser
 import com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlLexer
 import com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParser
 import com.github.frostycityman.inlinesqlcommentor.sql.parser.generated.oracle.PlSqlParserBaseVisitor
-import groovyjarjarantlr.ParseTree
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import org.antlr.v4.runtime.RuleContext
@@ -76,37 +75,24 @@ class ColumnCommentVisitor : PlSqlParserBaseVisitor<Unit>() {
      * @param ctx SELECT 절의 `selected_list` 파싱 컨텍스트
      */
     override fun visitSelected_list(ctx: PlSqlParser.Selected_listContext) {
-
         ctx.select_list_elements().forEach { element ->
-            //Table 별칭이 명시되어 있는 경우
-            var stopIndex = element.expression().stop.stopIndex
+            val expression = element.expression() ?: return@forEach
 
-            var columnName: String = ""
-            var tableAlias: String? = null;
+            // expression에서 테이블 별칭과 실제 컬럼명을 추출합니다.
+            val (tableAlias, columnName) =
+                extractAliasAndColumn(expression) ?: (null to expression.text)
 
-
-
-
-            // 별칭(alias)이 명시된 경우 해당 이름을 저장
-            if (element.column_alias() != null) {
-                columnName = element.column_alias().identifier().text
-
-            }
-            // 별칭이 없고 직접 식(expression)인 경우 원문 텍스트를 저장
-            else if (element.expression() != null) {
-                columnName = element.expression().text
-            }
+            // 별칭이 존재하면 별칭 이후에 주석을 삽입하고, 그렇지 않으면 표현식 뒤에 삽입합니다.
+            val stopIndex = element.column_alias()?.stop?.stopIndex ?: expression.stop.stopIndex
 
             insertionInfos.add(
                 CommentInsertionInfo(
                     columnName = columnName,
-                    tableAlias = tableAlias, // 'T1' 과 같은 별칭을 그대로 저장
+                    tableAlias = tableAlias,
                     insertionIndex = stopIndex
                 )
             )
-
         }
-//  columns.add(ColumnInfo(name = columnName, tableAlias = tableAlias))
         // 하위 노드 탐색을 위해 부모 클래스의 visit 호출
         super.visitSelected_list(ctx)
     }
