@@ -17,7 +17,8 @@ import org.antlr.v4.runtime.tree.ParseTree
 data class TableInfo(
     val tableName: String,
     val alias: String? = null,
-    val context: String
+    val context: String,
+    val insertionIndex: Int
 )
 
 /**
@@ -117,7 +118,8 @@ class TableNameVisitor : PlSqlParserBaseVisitor<Unit>() {
         }
 
         // 수집된 테이블 정보(이름, 별칭, 문맥)를 결과 Set에 추가합니다.
-        extractedTables.add(TableInfo(tableName, alias, context))
+        val stopIndex = ctx.stop.stopIndex
+        extractedTables.add(TableInfo(tableName, alias, context, stopIndex))
 
         // 기본 Visitor 동작을 계속합니다 (tableview_name은 자식이 거의 없어 큰 의미는 없음).
         super.visitTableview_name(ctx)

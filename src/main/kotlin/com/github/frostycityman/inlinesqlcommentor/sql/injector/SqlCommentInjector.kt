@@ -31,6 +31,17 @@ class SqlCommentInjector(
     private val commentProvider: ColumnCommentProvider,
 ) {
 
+    private val DEBUG: Boolean = (System.getProperty("inlinesql.debug") == "true")
+
+    private fun normalizeKey(id: String): String = id.trim().trim('"', '`').lowercase()
+
+    // 각 파트별로 감싸진 따옴표/백틱을 제거하고 다시 합칩니다. 예: "SCHEMA"."USERS" -> SCHEMA.USERS
+    private fun normalizeIdentifierChain(name: String): String =
+        name.split('.')
+            .map { it.trim().trim('"', '`', '\'', ' ') }
+            .filter { it.isNotEmpty() }
+            .joinToString(".")
+
     /**
      * 입력된 SQL 문자열에서 컬럼명을 추출한 뒤,
      * 각 컬럼명 뒤에 해당 컬럼의 주석을 `/* ... */` 형식으로 삽입합니다.
@@ -47,28 +58,57 @@ class SqlCommentInjector(
         val tableInfos: Set<TableInfo> = tableNameVisitor.parseTableNames(sql)
         val columnInfos: MutableList<CommentInsertionInfo> = columnVisitor.parseColumns(sql).toMutableList()
 
-        if (columnInfos.isEmpty()) {
-            return sql // 처리할 컬럼이 없으면 즉시 반환
+        if (columnInfos.isEmpty() && tableInfos.isEmpty()) {
+            return sql // 처리할 대상이 없으면 즉시 반환
         }
 
         // --- 2. 정보 가공 단계 ---
-        // TableInfo 리스트를 사용하여 '별칭 -> 실제 테이블 이름' 조회 맵을 생성합니다.
-        // 이것이 이 로직의 가장 핵심적인 개선점입니다.
-        val aliasToRealNameMap = tableInfos.associate { info ->
-            // 별칭이 있으면 (별칭 -> 테이블명), 없으면 (테이블명 -> 테이블명)으로 매핑
-            (info.alias ?: info.tableName) to info.tableName
+        // TableInfo 리스트를 사용하여 '별칭/테이블명 -> 실제 테이블 이름' 조회 맵을 생성합니다.
+        val aliasToRealNameMap = mutableMapOf<String, String>()
+        tableInfos.forEach { info ->
+            val real = normalizeIdentifierChain(info.tableName)
+            // 항상 테이블명 자체로도 키를 등록 (스키마 포함 가능)
+            aliasToRealNameMap[normalizeKey(info.tableName)] = real
+
+            // 스키마가 포함된 경우에도 기본 테이블명(마지막 세그먼트)으로 조회가 가능하도록 키를 추가합니다.
+            // 예: SCHEMA.USERS -> key: "users"
+            val baseKey = real.split('.')
+                .lastOrNull()
+                ?.trim('"', '`', '\'', ' ')
+                ?.lowercase()
+            if (!baseKey.isNullOrBlank()) {
+                // 이미 동일 키가 있으면 덮어쓰지 않습니다(예상치 못한 충돌 방지)
+                aliasToRealNameMap.putIfAbsent(baseKey, real)
+            }
+
+            // 별칭이 있으면 별칭으로도 등록
+            info.alias?.let { aliasToRealNameMap[normalizeKey(it)] = real }
+        }
+        if (DEBUG) {
+            println("[InlineSQLCommentor][DEBUG] 별명-> 실제 맵 : $aliasToRealNameMap")
         }
 
         // --- 3. 코멘트 삽입 단계 ---
         val commentedSqlBuilder = StringBuilder(sql)
+        val insertions = mutableListOf<Pair<Int, String>>()
 
-        // 인덱스가 꼬이지 않도록 뒤에서부터 수정
-        columnInfos.sortByDescending { it.insertionIndex }
-
+        // 3-1. 컬럼 코멘트 삽입 엔트리 수집
         columnInfos.forEach { colInfo ->
+            if (DEBUG) {
+                println("[InlineSQLCommentor][DEBUG] 열 후보 : 별칭='${colInfo.tableAlias}' name='${colInfo.columnName}' at ${colInfo.insertionIndex}")
+            }
             // colInfo의 테이블 별칭을 사용해 실제 테이블 이름을 맵에서 찾습니다.
             val realTableName = if (colInfo.tableAlias != null) {
-                aliasToRealNameMap[colInfo.tableAlias]
+                // 1차: 그대로 정규화하여 조회
+                aliasToRealNameMap[normalizeKey(colInfo.tableAlias)]
+                    // 2차: 점(.)이 포함된 경우 마지막 세그먼트로 재조회 (예: SCHEMA.USERS -> USERS)
+                    ?: run {
+                        val lastSeg = colInfo.tableAlias.split('.')
+                            .lastOrNull()
+                            ?.trim('"', '`', '\'', ' ')
+                            ?.lowercase()
+                        if (lastSeg.isNullOrBlank()) null else aliasToRealNameMap[lastSeg]
+                    }
             } else if (aliasToRealNameMap.size == 1) {
                 // SELECT ID FROM USERS 같은 단일 테이블, 별칭 없는 쿼리 지원
                 aliasToRealNameMap.values.first()
@@ -77,12 +117,34 @@ class SqlCommentInjector(
             }
 
             if (realTableName != null) {
-                // 정확하게 찾아낸 실제 테이블 이름으로 코멘트를 조회합니다.
-                val comment = commentProvider.getColumnComment(realTableName, colInfo.columnName)
-                comment?.let {
-                    commentedSqlBuilder.insert(colInfo.insertionIndex + 1, " /* $it */")
+                val normalizedTable = normalizeIdentifierChain(realTableName)
+                val normalizedColumn = normalizeIdentifierChain(colInfo.columnName)
+                val comment = commentProvider.getColumnComment(normalizedTable, normalizedColumn)
+                if (!comment.isNullOrBlank()) {
+                    insertions.add(colInfo.insertionIndex + 1 to " /* $comment */")
+                } else if (DEBUG) {
+                    println("[InlineSQLCommentor][DEBUG] 의견이 없습니다 $normalizedTable.$normalizedColumn")
                 }
+            } else if (DEBUG) {
+                println("[InlineSQLCommentor][DEBUG] 별명에 대한 실제 테이블을 해결할 수 없습니다='${colInfo.tableAlias}'")
             }
+        }
+
+        // 3-2. 테이블 코멘트 삽입 엔트리 수집
+        tableInfos.forEach { tbl ->
+            val normalizedTable = normalizeIdentifierChain(tbl.tableName)
+            val tableComment = commentProvider.getTableComment(normalizedTable)
+            if (!tableComment.isNullOrBlank()) {
+                insertions.add(tbl.insertionIndex + 1 to " /* $tableComment */")
+            } else if (DEBUG) {
+                println("[InlineSQLCommentor][DEBUG] 테이블 코멘트가 없습니다 $normalizedTable")
+            }
+        }
+
+        // 3-3. 인덱스가 꼬이지 않도록 뒤에서부터 한 번에 삽입
+        insertions.sortByDescending { it.first }
+        insertions.forEach { (index, textToInsert) ->
+            commentedSqlBuilder.insert(index, textToInsert)
         }
 
         return commentedSqlBuilder.toString()

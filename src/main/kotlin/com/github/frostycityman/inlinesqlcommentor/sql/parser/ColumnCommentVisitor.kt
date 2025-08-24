@@ -78,33 +78,30 @@ class ColumnCommentVisitor : PlSqlParserBaseVisitor<Unit>() {
     override fun visitSelected_list(ctx: PlSqlParser.Selected_listContext) {
 
         ctx.select_list_elements().forEach { element ->
-            //Table 별칭이 명시되어 있는 경우
-            var stopIndex = element.expression().stop.stopIndex
+            // 기본 삽입 위치는 expression의 끝
+            val expr = element.expression() ?: return@forEach
+            var stopIndex = expr.stop.stopIndex
 
-            var columnName: String = ""
-            var tableAlias: String? = null;
-
-
-
-
-            // 별칭(alias)이 명시된 경우 해당 이름을 저장
+            // alias가 있다면 alias 토큰 뒤로 삽입 위치를 조정
             if (element.column_alias() != null) {
-                columnName = element.column_alias().identifier().text
-
-            }
-            // 별칭이 없고 직접 식(expression)인 경우 원문 텍스트를 저장
-            else if (element.expression() != null) {
-                columnName = element.expression().text
+                stopIndex = element.column_alias().stop.stopIndex
             }
 
-            insertionInfos.add(
-                CommentInsertionInfo(
-                    columnName = columnName,
-                    tableAlias = tableAlias, // 'T1' 과 같은 별칭을 그대로 저장
-                    insertionIndex = stopIndex
+            // expression으로부터 테이블 별칭과 실제 컬럼명을 추출
+            val extracted = extractAliasAndColumn(expr)
+
+            // 단순 컬럼 참조(T1.COL 또는 COL)인 경우에만 코멘트 대상에 포함
+            if (extracted != null) {
+                val (tableAlias, realColumnName) = extracted
+
+                insertionInfos.add(
+                    CommentInsertionInfo(
+                        columnName = realColumnName,
+                        tableAlias = tableAlias,
+                        insertionIndex = stopIndex
+                    )
                 )
-            )
-
+            }
         }
 //  columns.add(ColumnInfo(name = columnName, tableAlias = tableAlias))
         // 하위 노드 탐색을 위해 부모 클래스의 visit 호출
@@ -153,44 +150,70 @@ class ColumnCommentVisitor : PlSqlParserBaseVisitor<Unit>() {
      * @return Pair(tableAlias, columnName) 또는 추출 실패 시 null.
      */
     private fun extractAliasAndColumn(expression: PlSqlParser.ExpressionContext): Pair<String?, String>? {
+        // 1) 우선: 파스트리 기반(General_element)으로 안전하게 시도
         try {
-            // 변수 타입을 ParseTree 대신 RuleContext로 변경하여 타입 불일치 오류를 해결합니다.
             var current: RuleContext = expression
-
-            // expression의 가장 깊은 곳까지 한 단계씩 탐색해 내려갑니다.
-            // 자식이 하나뿐인 노드는 의미있는 정보가 아닌 중간 단계일 확률이 높습니다.
             while (current.childCount == 1) {
-                // getChild()의 반환 타입은 ParseTree이지만, RuleContext는 ParseTree의 자식이므로
-                // 이 탐색에서는 문제가 되지 않습니다. 다만, 다음 할당을 위해 캐스팅이 필요할 수 있습니다.
                 val child = current.getChild(0)
                 if (child is RuleContext) {
                     current = child
                 } else {
-                    // 더 이상 RuleContext가 아니면 탐색 중단
                     break
                 }
             }
-
-            // 가장 깊은 곳에 도달한 노드가 일반적인 요소(general_element)인지 확인합니다.
-            // 이 경로는 실제 사용하는 PL/SQL 문법(.g4 파일)에 따라 달라질 수 있습니다.
             if (current is PlSqlParser.General_elementContext) {
-                // general_element는 보통 id_expression의 연속으로 구성됩니다.
-                // 예: T1.ID -> id_expression("T1"), id_expression("ID")
-                val idParts = current.general_element_part().map { it.id_expression().text }
-
+                var test =  current.general_element().text
+                println("test = ${test}")
+                val idParts = current.general_element_part().mapNotNull { part ->
+                    try { part.id_expression().text } catch (_: Exception) { null }
+                }
                 if (idParts.isNotEmpty()) {
-                    val columnName = idParts.last()
-                    // id_parts가 ["T1", "ID"] 라면, 별칭은 "T1", 컬럼은 "ID" 입니다.
-                    val tableAlias = if (idParts.size > 1) idParts.getOrNull(idParts.size - 2) else null
+                    // 요구사항: current.general_element().text 는 tableAlias, current.general_element_part() 는 컬럼
+                    val columnName = idParts.last().trim('"', '`')
+                    val aliasRaw = try { current.general_element().text } catch (_: Exception) { null }
+                    var tableAlias = aliasRaw?.trim('"', '`')
+                    // tableAlias가 'SCHEMA.USERS.ID' 같은 형태일 수 있으므로 컬럼 꼬리를 제거
+                    if (!tableAlias.isNullOrBlank() && tableAlias.contains('.')) {
+                        val lastDot = tableAlias.lastIndexOf('.')
+                        if (lastDot >= 0) {
+                            val tail = tableAlias.substring(lastDot + 1)
+                            if (tail.equals(columnName, ignoreCase = true)) {
+                                tableAlias = tableAlias.substring(0, lastDot)
+                            }
+                        }
+                    }
+                    // 컬럼만 있는 경우(tableAlias와 column이 동일하거나 alias가 비어있음)에는 별칭 없음으로 처리
+                    if (tableAlias.isNullOrBlank() || tableAlias.equals(columnName, ignoreCase = true)) {
+                        tableAlias = null
+                    }
                     return Pair(tableAlias, columnName)
                 }
             }
-        } catch (e: Exception) {
-            // 복잡한 표현식(함수, 리터럴 등)을 파싱하려다 실패할 경우 null을 반환하여 건너뜁니다.
-            return null
+        } catch (_: Exception) {
+            // 무시하고 텍스트 기반 폴백으로 진행
         }
 
-        // 간단한 컬럼명/별칭 구조가 아닌 경우 (예: 함수 호출, 리터럴 등)
-        return null
+        // 2) 폴백: 순수한 식별자(따옴표/백틱 허용)와 점(.)만으로 구성된 단순 컬럼 참조만 인식
+        val text = expression.text
+
+        // 공백이나 연산자/괄호 등의 문자가 섞여 있으면 복잡 표현식으로 간주하고 스킵
+        val allowedOnly = Regex("^[A-Za-z0-9_$#.`\"]+(?:\\.[A-Za-z0-9_$#.`\"]+)*").matchEntire(text) != null
+        if (!allowedOnly) return null
+
+        // 토큰화: "id" 또는 `id` 또는 식별자
+        val tokenRegex = Regex("\"([^\"]+)\"|`([^`]+)`|([A-Za-z_][A-Za-z0-9_$#]*)")
+        val parts = tokenRegex.findAll(text).map { m ->
+            m.groups[1]?.value ?: m.groups[2]?.value ?: m.groups[3]?.value ?: ""
+        }.filter { it.isNotEmpty() }.toList()
+
+        if (parts.isEmpty()) return null
+
+        // 텍스트가 토큰과 점(.)만으로 이루어졌는지 추가 확인 (안전성 향상)
+        val scrubbed = text.replace(tokenRegex, "").replace(".", "")
+        if (scrubbed.isNotEmpty()) return null
+
+        val columnName = parts.last()
+        val tableAlias = if (parts.size >= 2) parts[parts.size - 2] else null
+        return Pair(tableAlias, columnName)
     }
 }

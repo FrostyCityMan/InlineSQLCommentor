@@ -74,9 +74,9 @@ class IntelliJCacheColumnCommentProvider(
 
         return dasColumn?.comment.also { comment ->
             if (dasColumn == null) {
-                println("!! Column '$columnName' not found in table '${dasTable.name}'")
+                println("!! 열 '$columnName' 테이블에서 찾을 수 없습니다 '${dasTable.name}'")
             } else if (comment == null) {
-                println(">> Column '$columnName' in table '${dasTable.name}' found, but has no comment.")
+                println(">> 열 '$columnName' 테이블에 '${dasTable.name}' 발견되었지만 댓글이 없습니다.")
             }
         }
     }
@@ -180,7 +180,7 @@ class IntelliJCacheColumnCommentProvider(
 
         return dasTable.comment.also { comment ->
             if (comment == null) {
-                println(">> Column '' in table '${dasTable.name}' found, but has no comment.")
+                println(">> 표에 열 '' '${dasTable.name}' 발견되었지만 주석이 없습니다.")
             }
         }
     }
