@@ -1,13 +1,117 @@
 # InlineSQLCommentor
 
+## 简体中文
+
+InlineSQLCommentor 是一款 IntelliJ 平台插件，可在编辑器中为选中的 SQL 自动“瞬间注入”数据库注释。默认面向 Oracle PL/SQL，并利用 IntelliJ Database 工具窗口维护的元数据缓存（模式/表/列注释），无需网络连接也能飞快运行。
+
+- 🔮 立即在列名后插入 `/* 注释 */`
+- 🏷️ 在 FROM/INSERT/UPDATE/DELETE/CTE 场景下自动注入表注释
+- 🧠 智能别名→真实表名映射（不区分大小写）
+- ⚡ 极速：仅使用 IntelliJ Database 缓存 → 离线也能用
+- 🧩 基于 Oracle PL/SQL（ANTLR）的解析 —— 以 SELECT/INSERT 为主
+- ⌨️ 快捷键：Ctrl+Alt+C · 编辑器右键菜单：“Insert Column Comments”
+
+示例（自动转换）：
+
+```sql
+-- Before
+SELECT ID, NAME FROM USERS u;
+
+-- After
+SELECT
+  ID   /* 用户ID */,
+  NAME /* 用户名 */
+FROM USERS u;
+```
+
+为什么好用
+
+- 📈 极大提升可读性：含义一目了然
+- 🧭 便于维护：新同学也能快速理解上下文
+- 🛡️ 安全插入：从后向前插入，避免索引错位
+
+限制/注意
+
+- 🎯 原则上跳过复杂表达式（函数/字面量/标量子查询等）
+- 🚫 忽略系统 Schema，如 SYS、SYSTEM
+- 🗃️ 如果数据源缓存里没有注释，相应字段不会被插入注释
+
+---
+
+## English
+
+InlineSQLCommentor is an IntelliJ Platform plugin that instantly injects database comments into the SQL you select in the editor. It targets Oracle PL/SQL by default and uses IntelliJ’s Database tool window metadata cache (schema/table/column comments), so it works blazing fast without any network calls.
+
+- 🔮 Instantly inserts `/* comment */` right after columns
+- 🏷️ Automatically injects table comments in FROM/INSERT/UPDATE/DELETE/CTE contexts
+- 🧠 Smart alias→real table name mapping (case-insensitive)
+- ⚡ Super fast: uses only IntelliJ Database cache → works offline
+- 🧩 Oracle PL/SQL (ANTLR) based parsing — focused on SELECT/INSERT
+- ⌨️ Shortcut: Ctrl+Alt+C · Editor popup: “Insert Column Comments”
+
+Example (auto transform):
+
+```sql
+-- Before
+SELECT ID, NAME FROM USERS u;
+
+-- After
+SELECT
+  ID   /* User ID */,
+  NAME /* User Name */
+FROM USERS u;
+```
+
+Why it’s great
+
+- 📈 Huge readability boost: semantics pop out immediately
+- 🧭 Easier maintenance: newcomers grasp context faster
+- 🛡️ Safe insertion: inserts from the end to avoid index shifts
+
+Limits / Notes
+
+- 🎯 Skips complex expressions (functions/literals/scalar subqueries) by design
+- 🚫 Ignores system schemas like SYS and SYSTEM
+- 🗃️ If the data source cache has no comments, nothing will be inserted for those fields
+
+---
+
 InlineSQLCommentor는 에디터에서 선택한 SQL에 데이터베이스 컬럼 주석을 자동으로 삽입해 주는 IntelliJ Platform 플러그인입니다. Oracle PL/SQL을 기본 대상으로 하며, IntelliJ의 Database 도구 창이 유지하는 메타데이터 캐시(스키마/테이블/컬럼 주석)를 활용하여 빠르게 코멘트를 추가합니다.
 
 <!-- Plugin description -->
-InlineSQLCommentor는 에디터에서 선택한 SQL에 데이터베이스 컬럼 주석을 자동 삽입합니다. 
-- Editor의 선택 영역 내 SQL을 분석하여 각 컬럼 뒤에 `/* 주석 */`을 추가합니다.
-- IntelliJ Database(데이터 소스) 캐시로부터 테이블/컬럼의 코멘트를 조회하므로 네트워크 연결 없이도 빠르게 동작합니다.
-- 기본적으로 Oracle PL/SQL 문법(ANTLR)을 사용하여 SELECT/INSERT 구문을 파싱합니다.
-- 단축키: Ctrl+Alt+C, 에디터 팝업 메뉴: “Insert Column Comments”.
+✨ InlineSQLCommentor — 선택한 SQL에 데이터베이스 코멘트를 “순간 주입”하는 매직 툴!
+
+- 🔮 컬럼 뒤에 즉시 `/* 주석 */` 삽입
+- 🏷️ FROM/INSERT/UPDATE/DELETE/CTE 문맥의 테이블 주석도 자동 주입
+- 🧠 별칭→실제 테이블명 스마트 매핑(대소문자 무시)
+- ⚡ 초고속: IntelliJ Database 캐시만 활용 → 네트워크 없이도 번개처럼
+- 🧩 Oracle PL/SQL(ANTLR) 기반 파싱 — SELECT/INSERT 중심
+- ⌨️ 단축키: Ctrl+Alt+C · 에디터 팝업: “Insert Column Comments”
+
+예시(자동 변환):
+
+```sql
+-- Before
+SELECT ID, NAME FROM USERS u;
+
+-- After
+SELECT
+  ID   /* 사용자 ID */,
+  NAME /* 사용자명  */
+FROM USERS u;
+```
+
+왜 좋은가요?
+
+- 📈 가독성 폭증: SQL을 읽는 순간 의미가 보입니다.
+- 🧭 유지보수 용이: 새 팀원도 맥락 파악이 쉬워집니다.
+- 🛡️ 안전한 삽입: 원문 인덱스 꼬임 방지를 위해 뒤에서부터 삽입
+
+제한/주의:
+
+- 🎯 복잡한 표현식(함수/리터럴/스칼라 서브쿼리)은 원칙적으로 건너뜁니다.
+- 🚫 SYS, SYSTEM 등 시스템 스키마는 제외됩니다.
+- 🗃️ 데이터 소스 캐시에 코멘트가 없으면 해당 항목은 삽입되지 않습니다.
 <!-- Plugin description end -->
 
 ## 주요 기능
@@ -31,57 +135,6 @@ InlineSQLCommentor는 에디터에서 선택한 SQL에 데이터베이스 컬럼
 
 참고: 데이터 소스 캐시에 코멘트가 없는 컬럼은 주석이 추가되지 않습니다.
 
-## 동작 방식(아키텍처)
-- Action: `SqlCommentAction`
-  - 에디터/프로젝트/선택 영역을 확인하고 데이터 소스를 자동/수동으로 결정합니다.
-  - `IntelliJCacheColumnCommentProvider`와 `SqlCommentInjector`를 사용해 주석을 삽입하고, `WriteCommandAction`으로 선택 영역을 교체합니다.
-- Injector: `SqlCommentInjector`
-  - ANTLR 기반 `ColumnCommentVisitor`로 컬럼(이름, 삽입 위치)을 수집하고, `TableNameVisitor`로 테이블명/별칭을 수집합니다.
-  - 별칭→실제 테이블 이름 매핑을 만든 뒤, 각 컬럼에 대한 코멘트를 조회하여 원문 SQL의 해당 위치에 `/* ... */` 형태로 삽입합니다. 인덱스 꼬임 방지를 위해 뒤에서부터 삽입합니다.
-- Provider: `IntelliJCacheColumnCommentProvider` (인터페이스: `ColumnCommentProvider`)
-  - `DbPsiFacade`로 data source를 찾고, `DasUtil.getTables()`와 `DasTable.getDasChildren(ObjectKind.COLUMN)`을 이용해 캐시된 테이블/컬럼을 조회합니다.
-  - SYS, SYSTEM 스키마의 테이블은 제외합니다. `ReadAction`으로 안전하게 PSI/모델을 읽습니다.
-- Parser(ANTLR):
-  - Grammar: `src\main\antlr\PlSqlLexer.g4`, `PlSqlParser.g4`
-  - Generated: `src\main\gen\com\github\frostycityman\inlinesqlcommentor\sql\parser\generated\oracle\...`
-  - `ColumnCommentVisitor`: SELECT의 selected_list, INSERT의 column_list에서 컬럼 이름과 주석 삽입 위치(stopIndex)를 수집합니다.
-  - `TableNameVisitor`: parse tree를 bottom-up으로 따라 올라가서 테이블 이름과 별칭을 추출하고 문맥(FROM/UPDATE/DELETE/INSERT/CTE)을 기록합니다.
-
-## 지원 범위 및 한계
-- 지원 방언: Oracle PL/SQL(기본). 다른 DB도 Data Source 캐시가 있다면 코멘트 조회 자체는 가능하지만, 파서는 현재 PL/SQL에 최적화되어 있습니다.
-- SELECT/INSERT 컬럼 추출: JOIN/별칭이 포함된 SELECT에서 테이블 별칭 기반으로 컬럼 코멘트를 매핑합니다(대소문자 무시). 단, 함수/리터럴/스칼라 서브쿼리 등 복잡한 표현식은 원칙적으로 건너뜁니다.
-- 별칭 매핑: FROM/JOIN에 등장한 별칭을 추출하여 실제 테이블과 매핑합니다. SELECT 항목에 테이블 접두어가 없는 경우(모호한 컬럼)에는 단일 테이블 쿼리일 때만 코멘트를 삽입합니다.
-- 메타데이터 캐시 의존: Database 동기화가 되어 있지 않거나 코멘트가 비어 있으면 삽입되지 않습니다.
-
-## 설치
-- JetBrains Marketplace: 아직 게시되지 않았습니다. (게시 후 링크 추가 예정)
-- 로컬 설치(수동):
-  - Git clone 후 Gradle 빌드 산출물을 IDE에서 ‘Install plugin from disk…’로 설치하거나,
-  - 개발 모드로 실행: `./gradlew runIde` (Windows: `gradlew.bat runIde`)
-
-## 개발 가이드
-- JDK: 17
-- IntelliJ Platform: IU 2025.1.3 (gradle.properties 참고)
-- Gradle: 8.13
-- 주요 Gradle 설정: 
-  - `antlr` 플러그인으로 `generateGrammarSource` 작업이 PL/SQL 파서를 생성합니다. Kotlin/Java 컴파일 작업은 이에 의존합니다.
-  - IntelliJ Platform Gradle Plugin이 README의 “Plugin description” 섹션을 plugin.xml로 주입합니다.
-- 유용한 작업:
-  - `gradlew.bat generateGrammarSource` — ANTLR 생성물 갱신
-  - `gradlew.bat runIde` — 샌드박스 IDE 실행
-  - `gradlew.bat build` — 빌드/테스트
-
-## 프로젝트 구조(요약)
-- `src\main\kotlin\...\action\SqlCommentAction.kt` — 액션 엔트리 포인트
-- `src\main\kotlin\...\sql\injector\SqlCommentInjector.kt` — 코멘트 삽입기
-- `src\main\kotlin\...\sql\parser\ColumnCommentVisitor.kt` — 컬럼/삽입위치 수집
-- `src\main\kotlin\...\sql\parser\TableNameVisitor.kt` — 테이블/별칭 수집
-- `src\main\kotlin\...\sql\provider\ColumnCommentProvider.kt` — 제공자 인터페이스
-- `src\main\kotlin\...\sql\provider\IntelliJCacheColumnCommentProvider.kt` — 캐시 기반 구현
-- `src\main\resources\META-INF\plugin.xml` — 플러그인 메타데이터 및 액션 등록
-- `src\main\antlr` — PL/SQL 문법 정의(.g4)
-- `src\main\gen` — ANTLR 생성 코드(자동 생성)
-
 ## 로드맵(아이디어)
 - ColumnCommentVisitor의 별칭/표현식 파싱 고도화 (복잡한 표현식 지원 확대)
 - 다양한 SQL 방언 지원 (ANSI SQL, PostgreSQL 등) 옵션화
@@ -91,3 +144,10 @@ InlineSQLCommentor는 에디터에서 선택한 SQL에 데이터베이스 컬럼
 ## 크레딧
 - Based on the IntelliJ Platform Plugin Template.
 - Oracle PL/SQL ANTLR grammar 사용.
+
+
+---
+
+
+
+
